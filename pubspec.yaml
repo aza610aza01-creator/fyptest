@@ -1,0 +1,22 @@
+name: ai_gym_flutter
+description: AI Gym Cloud - Complete Flutter Android workout, progress, health, ML Kit camera detection, and account management system backed by Supabase.
+publish_to: "none"
+version: 4.0.0+22
+environment:
+  sdk: ">=3.13.0 <4.0.0"
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.10.2
+  camera: ^0.12.1
+  camera_android_camerax: ^0.7.4+8
+  google_mlkit_object_detection: ^0.17.1
+  shared_preferences: ^2.5.3
+  device_info_plus: ^13.3.0
+  uuid: ^4.5.1
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+flutter:
+  uses-material-design: true
