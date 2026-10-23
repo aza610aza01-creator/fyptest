@@ -266,6 +266,10 @@ create table if not exists public.camera_detections (
   source_width integer not null default 0 check (source_width >= 0),
   source_height integer not null default 0 check (source_height >= 0),
   detected_at timestamptz not null default timezone('utc', now()),
+  detection_engine text not null default 'yolov8_gym',
+  class_id integer not null default 0,
+  inference_ms numeric(6,2) not null default 0,
+  suggested_exercise text,
   image_path text
 );
 

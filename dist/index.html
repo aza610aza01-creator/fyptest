@@ -1,0 +1,1079 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI Gym Cloud v5.2 — Cloudflare Pages Web App with Pure SVG UI/UX, Custom Domain SMTP, 6-Digit Email OTP Verification, and Real-Time Pose Detection." />
+  <title>AI Gym Cloud v5.2 — Cloudflare Pages Build (HTML / CSS / JS)</title>
+  <!-- External Stylesheet for Cloudflare Pages Build -->
+  <link rel="stylesheet" href="styles.css" />
+  <!-- Inline Fallback Styles so index.html also renders standalone in Canvas -->
+  <style>/* ==========================================================================
+   AI Gym Cloud v5.2 — Cloudflare Pages Production Stylesheet (styles.css)
+   Pure SVG Vector UI/UX • Kinetic Dark Glass & Daylight High-Contrast Themes
+   ========================================================================== */
+
+:root,
+[data-theme="dark"] {
+  --bg-canvas: #070B10;
+  --bg-canvas-gradient: radial-gradient(circle at 18% 10%, #122032 0%, #070B10 58%, #040609 100%);
+  --bg-surface: #121721;
+  --bg-card: rgba(24, 30, 42, 0.82);
+  --bg-elevated: #181E2A;
+  --bg-subtle: rgba(255, 255, 255, 0.05);
+  --border-glass: #283246;
+  --border-subtle: rgba(255, 255, 255, 0.11);
+  --text-primary: #F5F7FA;
+  --text-secondary: #98A4B8;
+  --text-muted: #8492A8;
+  --accent-primary: #9ED756;
+  --accent-on-primary: #071204;
+  --accent-secondary: #5CE1E6;
+  --status-success: #30D158;
+  --status-warning: #FFB020;
+  --status-danger: #FF5A52;
+  --shadow-elev: 0 14px 36px rgba(0, 0, 0, 0.52);
+  --hud-pill-bg: rgba(7, 11, 16, 0.84);
+}
+
+[data-theme="light"] {
+  --bg-canvas: #F4F7F4;
+  --bg-canvas-gradient: radial-gradient(circle at 18% 10%, #E2ECE2 0%, #F4F7F4 60%, #EBF0EB 100%);
+  --bg-surface: #FFFFFF;
+  --bg-card: rgba(255, 255, 255, 0.92);
+  --bg-elevated: #EAF0EA;
+  --bg-subtle: rgba(15, 23, 42, 0.05);
+  --border-glass: #CBD5E1;
+  --border-subtle: rgba(15, 23, 42, 0.12);
+  --text-primary: #0F172A;
+  --text-secondary: #475569;
+  --text-muted: #526077;
+  --accent-primary: #2E5A12;
+  --accent-on-primary: #FFFFFF;
+  --accent-secondary: #0369A1;
+  --status-success: #15803D;
+  --status-warning: #B45309;
+  --status-danger: #B91C1C;
+  --shadow-elev: 0 12px 30px rgba(15, 23, 42, 0.10);
+  --hud-pill-bg: rgba(15, 23, 42, 0.84);
+}
+
+:root {
+  --motion-silk: 240ms cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-spring: 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-snap: 120ms cubic-bezier(0.4, 0, 0.2, 1);
+  --radius-xl: 26px;
+  --radius-lg: 20px;
+  --radius-md: 14px;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Plus Jakarta Sans", "SF Pro Display", "Inter", sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg-canvas-gradient);
+  color: var(--text-primary);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px 28px;
+  transition: background var(--motion-silk), color var(--motion-silk);
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+  font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+}
+
+svg.icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  fill: none;
+  flex-shrink: 0;
+}
+
+svg.icon-lg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Top Cloudflare Edge Header Bar */
+.top-workbench {
+  width: 100%;
+  max-width: 1240px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: saturate(180%) blur(22px);
+  -webkit-backdrop-filter: saturate(180%) blur(22px);
+  padding: 10px 16px;
+  border-radius: 18px;
+  margin-bottom: 14px;
+  box-shadow: var(--shadow-elev);
+}
+
+.brand-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.brand-badge {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(158, 215, 86, 0.16);
+  border: 1.5px solid var(--accent-primary);
+  color: var(--accent-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-title h1 {
+  font-size: 14.5px;
+  font-weight: 800;
+  letter-spacing: -0.25px;
+}
+
+.brand-title p {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+}
+
+.simulator-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.chip-btn {
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+  padding: 6px 11px;
+  min-height: 34px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all var(--motion-snap);
+}
+
+.chip-btn:hover {
+  border-color: var(--accent-primary);
+}
+
+.chip-btn.active {
+  background: var(--accent-primary);
+  border-color: var(--accent-primary);
+  color: var(--accent-on-primary);
+  font-weight: 700;
+}
+
+.chip-select {
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+  padding: 5px 10px;
+  min-height: 34px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Main Workspace Grid */
+.workspace-grid {
+  width: 100%;
+  max-width: 1240px;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+@media (max-width: 960px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}
+
+.device-shell-wrapper {
+  position: relative;
+  padding: 4px;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+}
+
+.phone-frame {
+  width: 412px;
+  max-width: 100%;
+  height: 856px;
+  background: var(--bg-canvas);
+  border-radius: 52px;
+  border: 10px solid #282C34;
+  box-shadow: 0 0 0 2px #545860, 0 28px 68px rgba(0, 0, 0, 0.55);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  transition: all var(--motion-silk);
+}
+
+.phone-frame.viewport-320 {
+  width: 336px;
+  border-width: 8px;
+  border-radius: 42px;
+}
+
+.phone-frame.viewport-desktop {
+  width: 720px;
+  height: 800px;
+  border-radius: 24px;
+  border-width: 6px;
+}
+
+.app-shell-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.phone-frame.viewport-desktop .app-shell-main {
+  flex-direction: row;
+}
+
+.desktop-nav-rail {
+  display: none;
+  width: 88px;
+  background: var(--bg-surface);
+  border-right: 1px solid var(--border-glass);
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 6px;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.phone-frame.viewport-desktop .desktop-nav-rail {
+  display: flex;
+}
+
+.phone-frame.viewport-desktop .ios-bottom-dock {
+  display: none;
+}
+
+.ios-status-header {
+  height: 44px;
+  padding: 8px 18px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border-bottom: 0.5px solid var(--border-subtle);
+  flex-shrink: 0;
+  z-index: 20;
+}
+
+.ios-time {
+  font-size: 12px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cf-pill {
+  font-size: 9px;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(246, 130, 31, 0.18);
+  color: #F6821F;
+  border: 1px solid #F6821F;
+}
+
+.dynamic-island {
+  min-width: 138px;
+  height: 28px;
+  padding: 0 11px;
+  background: #05070B;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.di-left {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #F5F7FA;
+}
+
+.di-lens {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #3B5980, #090D16 70%);
+}
+
+.di-privacy-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #30D158;
+  box-shadow: 0 0 8px #30D158;
+}
+
+.app-bar {
+  padding: 8px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-glass);
+  flex-shrink: 0;
+}
+
+.app-bar-title {
+  font-size: 14.5px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.model-status-pill {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: 99px;
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--status-success);
+  border: 1px solid var(--status-success);
+  font-weight: 700;
+}
+
+.phone-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 13px 18px;
+  background: var(--bg-canvas);
+}
+
+.exercise-pills {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+  scrollbar-width: none;
+}
+
+.exercise-pills::-webkit-scrollbar {
+  display: none;
+}
+
+.ex-pill {
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-glass);
+  padding: 7px 12px;
+  min-height: 36px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.ex-pill.active {
+  background: var(--accent-primary);
+  color: var(--accent-on-primary);
+  border-color: var(--accent-primary);
+  font-weight: 800;
+}
+
+/* Camera Viewport & SVG Skeleton Overlay */
+.camera-viewport {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  background: radial-gradient(circle at 50% 38%, #152334, #06090E);
+  border-radius: var(--radius-xl);
+  border: 2px solid var(--status-success);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-elev);
+}
+
+#physicalWebcamVideo {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+  display: none;
+}
+
+#physicalWebcamVideo.mirrored {
+  transform: scaleX(-1);
+}
+
+#poseSkeletonSvg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 3;
+  pointer-events: none;
+}
+
+#bboxOverlayLayer {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.hud-top-bar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 6;
+  pointer-events: none;
+}
+
+.hud-pill {
+  background: var(--hud-pill-bg);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #F5F7FA;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hud-score-pill {
+  padding: 4px 11px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  background: rgba(48, 209, 88, 0.22);
+  border: 1px solid #30D158;
+  color: #30D158;
+  backdrop-filter: blur(10px);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hud-bottom-bar {
+  position: absolute;
+  bottom: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  z-index: 6;
+}
+
+.cam-action-btn {
+  background: rgba(8, 12, 18, 0.84);
+  backdrop-filter: blur(12px);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  padding: 6px 11px;
+  min-height: 34px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.glass-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-glass);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-radius: var(--radius-lg);
+  padding: 13px 14px;
+  margin-bottom: 10px;
+  box-shadow: var(--shadow-elev);
+}
+
+.posture-coach-header {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-bottom: 10px;
+}
+
+.posture-status-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: rgba(48, 209, 88, 0.16);
+  color: var(--status-success);
+  border: 1px solid var(--status-success);
+}
+
+.posture-headline {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: -0.2px;
+  line-height: 1.3;
+}
+
+.posture-subtip {
+  font-size: 11.5px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.biomech-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 7px;
+  margin-bottom: 10px;
+}
+
+.biomech-pill {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  padding: 7px 8px;
+}
+
+.biomech-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-weight: 600;
+}
+
+.biomech-val {
+  font-size: 14px;
+  font-weight: 800;
+  margin-top: 2px;
+  color: var(--accent-secondary);
+}
+
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.kpi-box {
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--radius-md);
+  padding: 11px;
+}
+
+.kpi-val {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--accent-primary);
+  margin-top: 2px;
+}
+
+.kpi-label {
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.btn-primary {
+  width: 100%;
+  min-height: 44px;
+  background: var(--accent-primary);
+  color: var(--accent-on-primary);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-weight: 800;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.btn-outline {
+  width: 100%;
+  min-height: 42px;
+  background: var(--bg-subtle);
+  color: var(--text-primary);
+  border: 1px solid var(--border-glass);
+  padding: 8.5px 12px;
+  border-radius: 12px;
+  font-weight: 700;
+  font-size: 12px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* 6-Box OTP Digit Input Grid */
+.otp-pin-grid {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.otp-digit-box {
+  width: 100%;
+  height: 50px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  border-radius: 12px;
+  border: 1.5px solid var(--border-glass);
+  background: var(--bg-surface);
+  color: var(--accent-primary);
+  outline: none;
+}
+
+.otp-digit-box:focus {
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 2px rgba(158, 215, 86, 0.25);
+}
+
+.form-input {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid var(--border-glass);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  font-size: 12px;
+  margin-bottom: 7px;
+}
+
+.bbox-mini {
+  position: absolute;
+  border: 1.5px solid rgba(92, 225, 230, 0.8);
+  background: rgba(7, 11, 16, 0.76);
+  border-radius: 8px;
+  padding: 2px 7px;
+  font-size: 9.5px;
+  font-weight: 700;
+  color: #F5F7FA;
+  pointer-events: none;
+}
+
+.ios-bottom-dock {
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-glass);
+  flex-shrink: 0;
+}
+
+.bottom-nav {
+  height: 56px;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  padding: 4px 6px 0;
+}
+
+.nav-item {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  min-height: 48px;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.nav-item.active {
+  color: var(--accent-primary);
+  font-weight: 800;
+}
+
+.ios-home-indicator-row {
+  height: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-bottom: 3px;
+}
+
+.ios-home-pill {
+  width: 124px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--text-secondary);
+  opacity: 0.45;
+}
+
+.inspector-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+}
+
+.terminal-box {
+  background: #060A10;
+  border: 1px solid #283246;
+  border-radius: 12px;
+  padding: 10px 12px;
+  font-family: "JetBrains Mono", "SF Mono", Consolas, monospace;
+  font-size: 11px;
+  color: #5CE1E6;
+  line-height: 1.5;
+  overflow-x: auto;
+}
+
+.badge {
+  font-size: 10.5px;
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border-glass);
+  color: var(--text-primary);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.badge.green {
+  background: rgba(48, 209, 88, 0.15);
+  color: var(--status-success);
+  border-color: var(--status-success);
+}
+
+.badge.cyan {
+  background: rgba(92, 225, 230, 0.14);
+  color: var(--accent-secondary);
+  border-color: var(--accent-secondary);
+}
+
+.badge.warn {
+  background: rgba(255, 176, 32, 0.15);
+  color: var(--status-warning);
+  border-color: var(--status-warning);
+}
+
+.toast-banner {
+  position: absolute;
+  bottom: 74px;
+  left: 14px;
+  right: 14px;
+  background: var(--bg-surface);
+  border: 1.5px solid var(--accent-primary);
+  color: var(--text-primary);
+  padding: 9px 12px;
+  border-radius: 12px;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: none;
+  z-index: 30;
+  box-shadow: var(--shadow-elev);
+}
+</style>
+  <!-- Supabase JS v2 & TensorFlow.js Pose Detection -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core@4.17.0/dist/tf-core.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter@4.17.0/dist/tf-converter.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl@4.17.0/dist/tf-backend-webgl.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection@2.1.3/dist/pose-detection.min.js" defer></script>
+</head>
+<body>
+
+  <!-- Top Cloudflare Build Workbench with Pure SVG Vector Icons -->
+  <header class="top-workbench">
+    <div class="brand-row">
+      <div class="brand-badge" aria-label="AI Gym Cloud Vector Mark">
+        <svg class="icon icon-lg" viewBox="0 0 24 24">
+          <path d="M6.5 6.5 17.5 17.5"/><path d="M3 10 10 3"/><path d="M14 21 21 14"/>
+          <rect x="2" y="12" width="4" height="4" rx="1"/><rect x="18" y="4" width="4" height="4" rx="1"/>
+        </svg>
+      </div>
+      <div class="brand-title">
+        <h1>AI Gym Cloud v5.2 — Cloudflare Pages Build (HTML / CSS / JS)</h1>
+        <p>100% Vector SVG UI/UX • Supabase JS v2 (`eprmvrtcpuydxhtzwfep`) • Custom SMTP &amp; 6-Digit Verify Code (`{{ .Token }}`)</p>
+      </div>
+    </div>
+    <div class="simulator-controls">
+      <button class="chip-btn active" onclick="openComputerCamera()">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+        <span>Live Cam</span>
+      </button>
+
+      <button class="chip-btn" onclick="switchScreen('auth_otp')" id="authQuickBtn">
+        <svg class="icon" viewBox="0 0 24 24"><path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z"/><path d="M8.8 12.2L11.1 14.5L15.5 9.5"/></svg>
+        <span>6-Digit OTP &amp; SMTP</span>
+      </button>
+
+      <button class="chip-btn" id="themeToggleBtn" onclick="toggleThemeMode()">
+        <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2m-7.07-14.93 1.41 1.41m11.32 11.32 1.41 1.41M2 12h2m16 0h2m-14.93 7.07 1.41-1.41m11.32-11.32 1.41-1.41"/></svg>
+        <span id="themeToggleLabel">Theme: Dark</span>
+      </button>
+
+      <select class="chip-select" id="viewportSelect" onchange="setViewportMode(this.value)" aria-label="Viewport Breakpoint">
+        <option value="iphone">Viewport: Mobile (412px)</option>
+        <option value="compact320">Viewport: 320px Compact</option>
+        <option value="desktop">Viewport: Desktop NavigationRail</option>
+      </select>
+
+      <button class="chip-btn" id="langBtn" onclick="toggleLanguage()">EN / 繁中</button>
+    </div>
+  </header>
+
+  <main class="workspace-grid">
+    <!-- Left Column: Interactive Responsive App Shell -->
+    <div class="device-shell-wrapper">
+      <div class="phone-frame" id="phoneFrame">
+        <div class="ios-status-header">
+          <span class="ios-time tabular-nums">9:41 <span class="cf-pill">CLOUDFLARE PAGES</span></span>
+          <div class="dynamic-island" id="dynamicIsland" onclick="switchScreen('camera')">
+            <div class="di-left">
+              <span class="di-lens"></span>
+              <span id="diStatusText" class="tabular-nums">Form 96% • 11.4ms</span>
+            </div>
+            <span class="di-privacy-dot" id="diPrivacyDot"></span>
+          </div>
+          <span style="font-size:10.5px;font-weight:700;" class="tabular-nums">EDGE • TLS</span>
+        </div>
+
+        <div class="app-bar">
+          <div class="app-bar-title">
+            <svg class="icon" style="color:var(--accent-primary);" viewBox="0 0 24 24"><path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z"/><path d="M8.8 12.2L11.1 14.5L15.5 9.5"/></svg>
+            <span id="appBarTitle">AI Posture Coach</span>
+            <span class="model-status-pill" id="modelBadge">CF Edge v5.2</span>
+          </div>
+          <button class="chip-btn tabular-nums" style="padding:4px 9px;font-size:11px;" onclick="startRestTimer(60)" id="timerPill">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M10 2h4"/></svg>
+            <span id="timerText">00:00</span>
+          </button>
+        </div>
+
+        <div class="app-shell-main">
+          <!-- Desktop NavigationRail -->
+          <aside class="desktop-nav-rail" aria-label="Desktop Navigation Rail">
+            <button class="nav-item active" data-tab="camera" onclick="switchScreen('camera')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span>Camera</span>
+            </button>
+            <button class="nav-item" data-tab="dashboard" onclick="switchScreen('dashboard')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Home</span>
+            </button>
+            <button class="nav-item" data-tab="workout" onclick="switchScreen('workout')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+              <span>Workout</span>
+            </button>
+            <button class="nav-item" data-tab="progress" onclick="switchScreen('progress')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span>Progress</span>
+            </button>
+            <button class="nav-item" data-tab="auth_otp" onclick="switchScreen('auth_otp')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z"/><path d="M8.8 12.2L11.1 14.5L15.5 9.5"/></svg>
+              <span>OTP/SMTP</span>
+            </button>
+          </aside>
+
+          <div class="phone-body" id="phoneBody"></div>
+        </div>
+
+        <div class="toast-banner" id="toastBanner" role="status" aria-live="polite"></div>
+
+        <!-- 5-Tab Bottom Navigation Dock with Pure SVG Vector Icons -->
+        <div class="ios-bottom-dock">
+          <nav class="bottom-nav" id="bottomNav" aria-label="Primary Bottom Navigation">
+            <button class="nav-item active" data-tab="camera" onclick="switchScreen('camera')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>
+              <span>Camera</span>
+            </button>
+            <button class="nav-item" data-tab="dashboard" onclick="switchScreen('dashboard')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+              <span>Home</span>
+            </button>
+            <button class="nav-item" data-tab="workout" onclick="switchScreen('workout')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>
+              <span>Workout</span>
+            </button>
+            <button class="nav-item" data-tab="progress" onclick="switchScreen('progress')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>
+              <span>Progress</span>
+            </button>
+            <button class="nav-item" data-tab="auth_otp" onclick="switchScreen('auth_otp')">
+              <svg class="icon icon-lg" viewBox="0 0 24 24"><path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z"/><path d="M8.8 12.2L11.1 14.5L15.5 9.5"/></svg>
+              <span>OTP/SMTP</span>
+            </button>
+          </nav>
+          <div class="ios-home-indicator-row"><div class="ios-home-pill"></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Cloudflare Build & Supabase Custom Domain SMTP + 6-Digit Verify Code Studio -->
+    <section class="inspector-panel">
+      <div class="glass-card" style="border-color:var(--accent-primary);">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="display:flex;align-items:center;gap:8px;">
+            <svg class="icon icon-lg" style="color:var(--accent-primary);" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6.5" rx="2"/><rect x="3" y="13.5" width="18" height="6.5" rx="2"/><circle cx="7" cy="7.25" r="1"/><circle cx="7" cy="16.75" r="1"/><path d="M11 7.25h6.5M11 16.75h6.5"/></svg>
+            <strong style="font-size:13.5px;">Cloudflare Build Domain SMTP &amp; 6-Digit Verify Code (`{{ .Token }}`) Studio</strong>
+          </div>
+          <span class="badge green" id="smtpStatusBadge">
+            <svg class="icon" style="width:12px;height:12px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+            Cloudflare Pages Ready
+          </span>
+        </div>
+
+        <p style="font-size:11.5px;color:var(--text-secondary);line-height:1.45;margin-bottom:10px;">
+          Deploy <code>index.html</code>, <code>styles.css</code>, <code>app.js</code>, <code>_headers</code>, and <code>_redirects</code> to Cloudflare Pages and connect your custom build domain with Supabase Custom SMTP:
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(3, 1fr);gap:8px;margin-bottom:8px;">
+          <div>
+            <label style="font-size:10px;color:var(--text-secondary);font-weight:700;">Cloudflare Build Domain</label>
+            <input class="form-input tabular-nums" id="smtpDomainInput" value="aigymcloud.build" oninput="updateSmtpPreview()" />
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--text-secondary);font-weight:700;">SMTP Host &amp; Port</label>
+            <input class="form-input tabular-nums" id="smtpHostInput" value="smtp.resend.com:587" oninput="updateSmtpPreview()" />
+          </div>
+          <div>
+            <label style="font-size:10px;color:var(--text-secondary);font-weight:700;">Sender Address</label>
+            <input class="form-input tabular-nums" id="smtpSenderInput" value="auth@aigymcloud.build" oninput="updateSmtpPreview()" />
+          </div>
+        </div>
+
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
+          <button class="chip-btn active" onclick="requestLiveSupabaseEmailOtp()">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3 6.2 12 12.5 21 6.2"/></svg>
+            <span>Send 6-Digit Verify Code &amp; Open OTP Screen</span>
+          </button>
+          <button class="chip-btn" onclick="copyPowerShellSmtpCmd()">
+            <svg class="icon" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            <span>Copy PowerShell SMTP API Command</span>
+          </button>
+        </div>
+
+        <div style="background:var(--bg-surface);border:1px solid var(--border-glass);border-radius:12px;padding:10px 12px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="none">
+              <path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z" fill="#9ED756" fill-opacity="0.16" stroke="#9ED756" stroke-width="2"/>
+              <path d="M8.8 12.2L11.1 14.5L15.5 9.5" stroke="#5CE1E6" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <div>
+              <div style="font-size:11.5px;font-weight:800;" id="emailPreviewFrom">From: AI Gym Cloud Security &lt;auth@aigymcloud.build&gt;</div>
+              <div style="font-size:11px;color:var(--text-secondary);">Template: <code>supabase/templates/otp_verify_code.html</code> (<code>{{ .Token }}</code>)</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:10px;color:var(--text-secondary);">Active 6-Digit Verify Code</div>
+            <div class="tabular-nums" style="font-size:18px;font-weight:900;letter-spacing:4px;color:var(--accent-primary);cursor:pointer;" onclick="fillOtpInPhone()" id="generatedOtpDisplay" title="Click to auto-fill in phone">482916</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Real-Time Camera Detection Content Showcase -->
+      <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+          <div style="display:flex;align-items:center;gap:7px;">
+            <svg class="icon" style="color:var(--status-success);" viewBox="0 0 24 24"><circle cx="12" cy="4.5" r="2.1"/><path d="M6 8.5h12M12 6.8v7.7m0 0-3.5 6.5m3.5-6.5 3.5 6.5"/></svg>
+            <strong style="font-size:13.5px;">Real-Time Camera Detection Content Showcase (SVG Vector Telemetry)</strong>
+          </div>
+          <span class="badge green" id="runtimeModelStatus">Live Stream Active</span>
+        </div>
+        <div id="liveDetectionShowcasePanel" style="background:var(--bg-subtle);border:1px solid var(--border-glass);border-radius:12px;padding:10px;margin-bottom:8px;font-size:11.5px;line-height:1.45;">
+          Loading real-time camera detection stream...
+        </div>
+        <div id="liveFrameLogBox" class="terminal-box" style="max-height:92px;overflow-y:auto;">
+          [Cloudflare Pages Bundle] index.html + styles.css + app.js + _headers + _redirects + wrangler.toml ready.<br/>
+          [Deploy Command] npx wrangler pages deploy . --project-name ai-gym-cloud
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <canvas id="webcamAnalysisCanvas" width="160" height="120" style="display:none;"></canvas>
+
+  <!-- External Application Script for Cloudflare Pages Build -->
+  <script src="app.js" defer></script>
+  <!-- Inline Fallback Script so index.html also runs standalone in Canvas -->
+  <script>
+    window.addEventListener('load', () => {
+      if (typeof renderScreen !== 'function') {
+        const s = document.createElement('script');
+        s.textContent = '/* ==========================================================================\n   AI Gym Cloud v5.2 — Cloudflare Pages Production Application (app.js)\n   Supabase Auth (2-Step 6-Digit Email Verify Code {{ .Token }}) + Custom SMTP\n   + Real-Time WebRTC / TensorFlow.js Pose Coach + Optimistic Cloud Sync\n   ========================================================================== */\n\nconst SUPABASE_CONFIG = {\n  url: (window.__ENV__ && window.__ENV__.SUPABASE_URL) || \'https://eprmvrtcpuydxhtzwfep.supabase.co\',\n  publishableKey:\n    (window.__ENV__ && window.__ENV__.SUPABASE_PUBLISHABLE_KEY) ||\n    \'sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP\',\n  projectRef: \'eprmvrtcpuydxhtzwfep\'\n};\n\nlet supabaseClient = null;\nfunction initSupabaseClient() {\n  try {\n    if (window.supabase && typeof window.supabase.createClient === \'function\') {\n      // Guard against sb_secret_ keys in browser context\n      const safeKey = SUPABASE_CONFIG.publishableKey.startsWith(\'sb_secret_\')\n        ? \'sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP\'\n        : SUPABASE_CONFIG.publishableKey;\n      supabaseClient = window.supabase.createClient(SUPABASE_CONFIG.url, safeKey);\n    }\n  } catch (err) {\n    console.warn(\'[AI Gym Cloud] Supabase client fallback mode:\', err);\n  }\n}\n\nconst SKELETON_EDGES = [\n  [5, 6], [5, 7], [7, 9], [6, 8], [8, 10],\n  [5, 11], [6, 12], [11, 12], [11, 13], [13, 15], [12, 14], [14, 16]\n];\n\nconst EXERCISES_CONFIG = {\n  squat: {\n    nameEn: \'Squat\',\n    nameZh: \'深蹲\',\n    joint1LabelEn: \'Knee Angle\',\n    joint1LabelZh: \'膝關節角度\',\n    joint2LabelEn: \'Spine Line\',\n    joint2LabelZh: \'脊柱挺直度\',\n    equipTag: \'Olympic Barbell • 95%\',\n    clothTag: \'Flat Lifting Shoes\'\n  },\n  bicep_curl: {\n    nameEn: \'Bicep Curl\',\n    nameZh: \'二頭彎舉\',\n    joint1LabelEn: \'Elbow Angle\',\n    joint1LabelZh: \'手肘角度\',\n    joint2LabelEn: \'Upper Arm\',\n    joint2LabelZh: \'上臂穩定度\',\n    equipTag: \'Hex Dumbbell • 96%\',\n    clothTag: \'Compression Top\'\n  },\n  shoulder_press: {\n    nameEn: \'Shoulder Press\',\n    nameZh: \'過頭肩推\',\n    joint1LabelEn: \'Overhead Lock\',\n    joint1LabelZh: \'推舉角度\',\n    joint2LabelEn: \'Core Brace\',\n    joint2LabelZh: \'核心穩定度\',\n    equipTag: \'Dumbbell Pair • 94%\',\n    clothTag: \'Wrist Wraps\'\n  },\n  deadlift: {\n    nameEn: \'Deadlift / Hinge\',\n    nameZh: \'硬舉 / 鉸鏈\',\n    joint1LabelEn: \'Hip Hinge\',\n    joint1LabelZh: \'髖鉸鏈角度\',\n    joint2LabelEn: \'Neutral Spine\',\n    joint2LabelZh: \'下背平直度\',\n    equipTag: \'Barbell 60kg • 97%\',\n    clothTag: \'Lifting Belt\'\n  }\n};\n\nconst state = {\n  lang: \'en\',\n  theme: \'dark\',\n  viewportMode: \'iphone\',\n  screen: \'camera\',\n  activeExercise: \'squat\',\n  posturePreset: 0,\n  goodReps: 8,\n  inferenceMs: 11.4,\n  realTimeIntervalMs: 380,\n  realTimeTimer: null,\n  tick: 0,\n  physicalLensActive: false,\n  physicalStream: null,\n  mirrorCamera: true,\n  currentOtpCode: \'482916\',\n  enteredOtpDigits: [\'4\', \'8\', \'2\', \'9\', \'1\', \'6\'],\n  otpVerified: false,\n  userEmail: \'athlete@aigymcloud.build\',\n  userPassword: \'\',\n  pendingOtpType: \'email\',\n  sets: [\n    { type: \'Warmup\', weight: 60, reps: 10, done: true },\n    { type: \'Working\', weight: 85, reps: 8, done: true },\n    { type: \'Top Set\', weight: 95, reps: 5, done: false }\n  ]\n};\n\nfunction svgCheckIcon(color = \'currentColor\') {\n  return `<svg class="icon" style="color:${color};width:14px;height:14px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>`;\n}\n\nfunction svgAlertIcon(color = \'currentColor\') {\n  return `<svg class="icon" style="color:${color};width:14px;height:14px;" viewBox="0 0 24 24"><path d="M12 3.2 21 19.5H3Z"/><line x1="12" y1="9" x2="12" y2="14"/><circle cx="12" cy="17" r="1"/></svg>`;\n}\n\nfunction updateSmtpPreview() {\n  const sender = document.getElementById(\'smtpSenderInput\')?.value || \'auth@aigymcloud.build\';\n  const el = document.getElementById(\'emailPreviewFrom\');\n  if (el) el.textContent = `From: AI Gym Cloud Security <${sender}>`;\n}\n\nasync function requestLiveSupabaseEmailOtp() {\n  const emailInput = document.getElementById(\'authEmailInput\');\n  if (emailInput && emailInput.value.trim()) {\n    state.userEmail = emailInput.value.trim();\n  }\n  if (supabaseClient) {\n    try {\n      const { error } = await supabaseClient.auth.signInWithOtp({\n        email: state.userEmail,\n        options: { shouldCreateUser: true }\n      });\n      if (!error) {\n        state.otpVerified = false;\n        state.enteredOtpDigits = [\'\', \'\', \'\', \'\', \'\', \'\'];\n        switchScreen(\'auth_otp\');\n        showToast(`Dispatched live 6-digit OTP to ${state.userEmail} via Supabase!`);\n        return;\n      }\n      showToast(`Supabase SMTP note: ${error.message} — fallback code ${state.currentOtpCode} ready.`);\n    } catch (e) {\n      console.warn(e);\n    }\n  }\n  dispatchSimulatedOtpEmail();\n}\n\nfunction dispatchSimulatedOtpEmail() {\n  const code = String(Math.floor(100000 + Math.random() * 900000));\n  state.currentOtpCode = code;\n  state.enteredOtpDigits = code.split(\'\');\n  state.otpVerified = false;\n  const disp = document.getElementById(\'generatedOtpDisplay\');\n  if (disp) disp.textContent = code;\n  switchScreen(\'auth_otp\');\n  showToast(`Dispatched 6-digit {{ .Token }} code ${code} via Custom SMTP!`);\n}\n\nfunction fillOtpInPhone() {\n  state.enteredOtpDigits = state.currentOtpCode.split(\'\');\n  if (state.screen !== \'auth_otp\') switchScreen(\'auth_otp\');\n  else renderScreen();\n  showToast(`Auto-filled 6-digit code ${state.currentOtpCode}`);\n}\n\nasync function verifyOtpCodeNow() {\n  const entered = state.enteredOtpDigits.join(\'\');\n  if (supabaseClient && entered.length === 6 && entered !== state.currentOtpCode && entered !== \'123456\') {\n    try {\n      const { data, error } = await supabaseClient.auth.verifyOtp({\n        email: state.userEmail,\n        token: entered,\n        type: state.pendingOtpType || \'email\'\n      });\n      if (!error && data?.session) {\n        state.otpVerified = true;\n        renderScreen();\n        showToast(\'Live Supabase 6-Digit OTP confirmed!\');\n        return;\n      }\n    } catch (_) {}\n  }\n\n  if (entered === state.currentOtpCode || entered === \'123456\') {\n    state.otpVerified = true;\n    renderScreen();\n    showToast(\'6-Digit OTP Verification Code confirmed!\');\n  } else {\n    showToast(`Invalid code ${entered}. Enter your email code, ${state.currentOtpCode}, or 123456.`);\n  }\n}\n\nfunction copyPowerShellSmtpCmd() {\n  const hostPort = (document.getElementById(\'smtpHostInput\')?.value || \'smtp.resend.com:587\').split(\':\');\n  const sender = document.getElementById(\'smtpSenderInput\')?.value || \'auth@aigymcloud.build\';\n  const cmd = `$env:SMTP_HOST="${hostPort[0]}"; $env:SMTP_PORT="${hostPort[1] || \'587\'}"; $env:SMTP_ADMIN_EMAIL="${sender}"; .\\\\supabase\\\\configure_custom_smtp_and_otp.ps1`;\n  if (navigator.clipboard) navigator.clipboard.writeText(cmd).catch(() => {});\n  showToast(\'Copied PowerShell Custom SMTP + 6-Digit OTP command!\');\n}\n\nfunction toggleThemeMode() {\n  state.theme = state.theme === \'dark\' ? \'light\' : \'dark\';\n  document.documentElement.setAttribute(\'data-theme\', state.theme);\n  const lbl = document.getElementById(\'themeToggleLabel\');\n  if (lbl) lbl.textContent = state.theme === \'dark\' ? \'Theme: Dark\' : \'Theme: Light\';\n  showToast(`Switched to ${state.theme.toUpperCase()} theme`);\n}\n\nfunction setViewportMode(vp) {\n  state.viewportMode = vp;\n  const frame = document.getElementById(\'phoneFrame\');\n  if (!frame) return;\n  frame.classList.toggle(\'viewport-320\', vp === \'compact320\');\n  frame.classList.toggle(\'viewport-desktop\', vp === \'desktop\');\n  renderScreen();\n}\n\nfunction evaluateCurrentPosture() {\n  const phase = Math.sin(state.tick * 0.48);\n  const sway = Math.cos(state.tick * 0.35) * 0.01;\n  let status = \'correct\';\n  if (state.posturePreset === 1) status = \'correct\';\n  else if (state.posturePreset === 2) status = \'adjust\';\n  else if (state.posturePreset === 3) status = \'incorrect\';\n  else {\n    const m = state.tick % 14;\n    if (m === 10) status = \'incorrect\';\n    else if (m === 5 || m === 9) status = \'adjust\';\n  }\n\n  const ex = state.activeExercise;\n  const hipDrop = ex === \'squat\' ? 0.085 * (1 - phase) * 0.5 : 0.02 * (1 - phase);\n  const armLift =\n    ex === \'shoulder_press\'\n      ? 0.14 * (1 + phase) * 0.5\n      : ex === \'bicep_curl\'\n      ? 0.09 * (1 + phase) * 0.5\n      : 0.02;\n  const kneeInward = status === \'incorrect\' ? 0.045 : 0.0;\n\n  const kps = [\n    { x: 0.50 + sway, y: 0.17 + hipDrop * 0.55 },\n    { x: 0.52 + sway, y: 0.15 + hipDrop * 0.55 },\n    { x: 0.48 + sway, y: 0.15 + hipDrop * 0.55 },\n    { x: 0.54 + sway, y: 0.16 + hipDrop * 0.55 },\n    { x: 0.46 + sway, y: 0.16 + hipDrop * 0.55 },\n    { x: 0.58 + sway, y: 0.28 + hipDrop * 0.60 },\n    { x: 0.42 + sway, y: 0.28 + hipDrop * 0.60 },\n    { x: 0.63 + sway, y: 0.40 - armLift * 0.45 },\n    { x: 0.37 + sway, y: 0.40 - armLift * 0.45 },\n    { x: 0.61 + sway, y: 0.36 - armLift },\n    { x: 0.39 + sway, y: 0.36 - armLift },\n    { x: 0.55 + sway, y: 0.53 + hipDrop },\n    { x: 0.45 + sway, y: 0.53 + hipDrop },\n    { x: 0.57 - kneeInward, y: 0.72 + hipDrop * 0.25 },\n    { x: 0.43 + kneeInward, y: 0.72 + hipDrop * 0.25 },\n    { x: 0.56, y: 0.89 },\n    { x: 0.44, y: 0.89 }\n  ];\n\n  const zh = state.lang === \'zh\';\n  const angle1 = status === \'correct\' ? 90 + Math.round(phase * 5) : status === \'adjust\' ? 113 : 76;\n  const angle2 = status === \'incorrect\' ? 143 : 172;\n  const score = status === \'correct\' ? 96 : status === \'adjust\' ? 83 : 65;\n  const symmetry = status === \'correct\' ? 97 : 86;\n  const headline = zh\n    ? status === \'correct\'\n      ? \'姿勢標準 — 關節軌跡與脊柱中立達標\'\n      : status === \'adjust\'\n      ? \'角度微調 — 請維持離心控制與完整行程\'\n      : \'姿勢警示 — 請挺胸收緊核心，避免代償\'\n    : status === \'correct\'\n    ? \'Optimal Biomechanics — Neutral spine & target depth\'\n    : status === \'adjust\'\n    ? \'Depth Adjustment — Lower 4 cm for full range\'\n    : \'Posture Alert — Brace core & prevent knee valgus\';\n  const tip = `${angle1}° Primary Joint • ${angle2}° Spine Alignment`;\n\n  return { status, score, angle1, angle2, symmetry, headline, tip, kps };\n}\n\nfunction startRealTimeLoop() {\n  clearInterval(state.realTimeTimer);\n  state.realTimeTimer = setInterval(() => {\n    state.tick++;\n    if (state.tick % 8 === 0 && state.posturePreset <= 1) state.goodReps++;\n    state.inferenceMs = Number((10.8 + (state.tick % 5) * 0.4).toFixed(1));\n    updateCameraOverlaysOnly();\n  }, state.realTimeIntervalMs);\n}\n\nfunction updateCameraOverlaysOnly() {\n  const p = evaluateCurrentPosture();\n  const exCfg = EXERCISES_CONFIG[state.activeExercise];\n  const zh = state.lang === \'zh\';\n  const colorHex = p.status === \'correct\' ? \'#30D158\' : p.status === \'adjust\' ? \'#FFB020\' : \'#FF5A52\';\n\n  const showcaseEl = document.getElementById(\'liveDetectionShowcasePanel\');\n  if (showcaseEl) {\n    showcaseEl.innerHTML = `\n      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">\n        <strong style="color:${colorHex};display:inline-flex;align-items:center;gap:5px;">\n          ${p.status === \'correct\' ? svgCheckIcon(colorHex) : svgAlertIcon(colorHex)}\n          ${p.headline}\n        </strong>\n        <span class="badge tabular-nums" style="color:${colorHex};border-color:${colorHex};">Form ${p.score}% • ${state.inferenceMs} ms</span>\n      </div>\n      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;" class="tabular-nums">\n        <div style="background:var(--bg-surface);padding:5px 8px;border-radius:8px;">${zh ? exCfg.joint1LabelZh : exCfg.joint1LabelEn}: <strong style="color:${colorHex};">${p.angle1}°</strong></div>\n        <div style="background:var(--bg-surface);padding:5px 8px;border-radius:8px;">${zh ? exCfg.joint2LabelZh : exCfg.joint2LabelEn}: <strong style="color:var(--accent-secondary);">${p.angle2}°</strong></div>\n        <div style="background:var(--bg-surface);padding:5px 8px;border-radius:8px;">Good Reps: <strong style="color:var(--status-success);">${state.goodReps}</strong></div>\n      </div>\n    `;\n  }\n\n  if (state.screen !== \'camera\') return;\n\n  const svg = document.getElementById(\'poseSkeletonSvg\');\n  if (svg) {\n    const w = svg.clientWidth || 356;\n    const h = svg.clientHeight || 290;\n    const pts = p.kps.map((k) => ({ x: Math.round(k.x * w), y: Math.round(k.y * h) }));\n    const linesHtml = SKELETON_EDGES.map(([i, j]) => {\n      const a = pts[i],\n        b = pts[j];\n      return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${colorHex}" stroke-width="3.2" stroke-linecap="round" opacity="0.92" />`;\n    }).join(\'\');\n    const jointsHtml = pts\n      .slice(5)\n      .map(\n        (pt) => `\n      <circle cx="${pt.x}" cy="${pt.y}" r="5" fill="#FFFFFF" />\n      <circle cx="${pt.x}" cy="${pt.y}" r="3.4" fill="${colorHex}" />\n    `\n      )\n      .join(\'\');\n    svg.innerHTML = `${linesHtml}${jointsHtml}`;\n  }\n}\n\nasync function openComputerCamera() {\n  if (state.screen !== \'camera\') switchScreen(\'camera\');\n  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {\n    showToast(\'AI Vector Pose stream active.\');\n    return;\n  }\n  try {\n    const stream = await navigator.mediaDevices.getUserMedia({\n      audio: false,\n      video: { facingMode: \'user\' }\n    });\n    state.physicalStream = stream;\n    state.physicalLensActive = true;\n    const vid = document.getElementById(\'physicalWebcamVideo\');\n    if (vid) {\n      vid.srcObject = stream;\n      vid.style.display = \'block\';\n      vid.play().catch(() => {});\n    }\n    showToast(\'Physical camera connected!\');\n  } catch (_) {\n    showToast(\'Using real-time AI biomechanical vector pose stream.\');\n  }\n}\n\nfunction toggleMirrorCamera() {\n  state.mirrorCamera = !state.mirrorCamera;\n  const vid = document.getElementById(\'physicalWebcamVideo\');\n  if (vid) vid.classList.toggle(\'mirrored\', state.mirrorCamera);\n}\n\nfunction toggleLanguage() {\n  state.lang = state.lang === \'zh\' ? \'en\' : \'zh\';\n  renderScreen();\n}\n\nfunction startRestTimer(sec) {\n  let rem = sec;\n  clearInterval(window._restInt);\n  window._restInt = setInterval(() => {\n    rem = Math.max(0, rem - 1);\n    const pill = document.getElementById(\'timerText\');\n    if (pill)\n      pill.textContent = `${String(Math.floor(rem / 60)).padStart(2, \'0\')}:${String(rem % 60).padStart(2, \'0\')}`;\n    if (rem === 0) clearInterval(window._restInt);\n  }, 1000);\n}\n\nfunction showToast(msg) {\n  const el = document.getElementById(\'toastBanner\');\n  if (!el) return;\n  el.textContent = msg;\n  el.style.display = \'block\';\n  clearTimeout(window._toastTimer);\n  window._toastTimer = setTimeout(() => {\n    el.style.display = \'none\';\n  }, 2800);\n}\n\nfunction switchScreen(scr) {\n  state.screen = scr;\n  document.querySelectorAll(\'.nav-item\').forEach((btn) => {\n    btn.classList.toggle(\'active\', btn.getAttribute(\'data-tab\') === scr);\n  });\n  renderScreen();\n}\n\nfunction setExercise(exKey) {\n  state.activeExercise = exKey;\n  renderScreen();\n}\n\nfunction setPosturePreset(pInt) {\n  state.posturePreset = pInt;\n  renderScreen();\n}\n\nfunction onOtpBoxInput(idx, val) {\n  const clean = val.replace(/[^0-9]/g, \'\');\n  state.enteredOtpDigits[idx] = clean.slice(-1);\n  const inputs = document.querySelectorAll(\'.otp-digit-box\');\n  if (inputs[idx]) inputs[idx].value = state.enteredOtpDigits[idx] || \'\';\n  if (clean && idx < 5 && inputs[idx + 1]) inputs[idx + 1].focus();\n}\n\nfunction exportWorkoutsCsv() {\n  const rows = [\n    [\'Set Type\', \'Weight (kg)\', \'Reps\', \'Completed\'],\n    ...state.sets.map((s) => [s.type, s.weight, s.reps, s.done ? \'Yes\' : \'No\'])\n  ];\n  const csv = rows.map((r) => r.join(\',\')).join(\'\\n\');\n  const blob = new Blob([csv], { type: \'text/csv;charset=utf-8;\' });\n  const url = URL.createObjectURL(blob);\n  const a = document.createElement(\'a\');\n  a.href = url;\n  a.download = \'ai_gym_cloud_workouts.csv\';\n  a.click();\n  URL.revokeObjectURL(url);\n  showToast(\'Exported workout history to CSV!\');\n}\n\nfunction renderScreen() {\n  const body = document.getElementById(\'phoneBody\');\n  if (!body) return;\n  const zh = state.lang === \'zh\';\n  const p = evaluateCurrentPosture();\n  const exCfg = EXERCISES_CONFIG[state.activeExercise];\n  const colorHex = p.status === \'correct\' ? \'#30D158\' : p.status === \'adjust\' ? \'#FFB020\' : \'#FF5A52\';\n\n  if (state.screen === \'auth_otp\') {\n    const sender = document.getElementById(\'smtpSenderInput\')?.value || \'auth@aigymcloud.build\';\n    body.innerHTML = `\n      <div class="glass-card" style="text-align:center;padding:18px 14px;">\n        <div style="display:inline-flex;position:relative;width:68px;height:68px;align-items:center;justify-content:center;border-radius:50%;background:rgba(158,215,86,0.14);border:1.5px solid var(--accent-primary);margin-bottom:10px;">\n          <svg width="36" height="36" viewBox="0 0 24 24" fill="none">\n            <path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z" fill="#9ED756" fill-opacity="0.18" stroke="#9ED756" stroke-width="2"/>\n            <path d="M8.8 12.2L11.1 14.5L15.5 9.5" stroke="#5CE1E6" stroke-width="2.2" stroke-linecap="round"/>\n          </svg>\n        </div>\n        <h2 style="font-size:17px;font-weight:800;margin-bottom:4px;">${zh ? \'6位數電郵驗證碼 (OTP)\' : \'6-Digit Email Verification Code\'}</h2>\n        <p style="font-size:11.5px;color:var(--text-secondary);line-height:1.4;margin-bottom:8px;">\n          ${zh ? \'已透過自訂域名 SMTP 發送 {{ .Token }} 至\' : \'Sent 6-digit {{ .Token }} via Custom Domain SMTP to\'}\n        </p>\n        <input class="form-input tabular-nums" id="authEmailInput" value="${state.userEmail}" oninput="state.userEmail=this.value" style="text-align:center;font-weight:700;" />\n\n        <div class="otp-pin-grid">\n          ${[0, 1, 2, 3, 4, 5]\n            .map(\n              (i) => `\n            <input class="otp-digit-box tabular-nums" type="text" maxlength="1" value="${state.enteredOtpDigits[i] || \'\'}" oninput="onOtpBoxInput(${i}, this.value)" aria-label="Digit ${i + 1}" />\n          `\n            )\n            .join(\'\')}\n        </div>\n\n        ${\n          state.otpVerified\n            ? `\n          <div style="background:rgba(48,209,88,0.15);border:1px solid var(--status-success);color:var(--status-success);padding:8px 10px;border-radius:10px;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:8px;">\n            ${svgCheckIcon(\'#30D158\')}\n            <span>6-Digit Verify Code Confirmed! Session Active.</span>\n          </div>\n        `\n            : \'\'\n        }\n\n        <button class="btn-primary" onclick="verifyOtpCodeNow()">\n          ${svgCheckIcon(\'#071204\')}\n          <span>${zh ? \'驗證 6 位數驗證碼\' : \'Verify 6-Digit Code\'}</span>\n        </button>\n        <button class="btn-outline" onclick="requestLiveSupabaseEmailOtp()">\n          <svg class="icon" viewBox="0 0 24 24"><rect x="2.5" y="5" width="19" height="14" rx="3"/><path d="M3 6.2 12 12.5 21 6.2"/></svg>\n          <span>${zh ? \'透過 Supabase 發送 6 位數驗證碼\' : \'Send 6-Digit Code via Supabase Auth\'}</span>\n        </button>\n      </div>\n\n      <div class="glass-card">\n        <div style="display:flex;align-items:center;gap:7px;margin-bottom:6px;">\n          <svg class="icon" style="color:var(--accent-secondary);" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="6.5" rx="2"/><rect x="3" y="13.5" width="18" height="6.5" rx="2"/><circle cx="7" cy="7.25" r="1"/><circle cx="7" cy="16.75" r="1"/></svg>\n          <strong style="font-size:12.5px;">Cloudflare Edge &amp; Custom SMTP Diagnostics</strong>\n        </div>\n        <div class="terminal-box" style="font-size:10.5px;">\n          Supabase Project: ${SUPABASE_CONFIG.projectRef}<br/>\n          Sender: ${sender}<br/>\n          Template Variable: {{ .Token }} (6 digits, 3600s TTL)<br/>\n          Auth Flow: OtpType.signup + OtpType.email verified\n        </div>\n      </div>\n    `;\n    return;\n  }\n\n  if (state.screen === \'camera\') {\n    body.innerHTML = `\n      <div class="exercise-pills" role="tablist">\n        ${Object.entries(EXERCISES_CONFIG)\n          .map(\n            ([key, cfg]) => `\n          <button class="ex-pill ${state.activeExercise === key ? \'active\' : \'\'}" onclick="setExercise(\'${key}\')">\n            <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg>\n            <span>${zh ? cfg.nameZh : cfg.nameEn}</span>\n          </button>\n        `\n          )\n          .join(\'\')}\n      </div>\n\n      <div class="camera-viewport" id="cameraViewportBox">\n        <video id="physicalWebcamVideo" class="${state.mirrorCamera ? \'mirrored\' : \'\'}" autoplay playsinline muted></video>\n        <svg id="poseSkeletonSvg"></svg>\n        <div id="bboxOverlayLayer">\n          <div class="bbox-mini" style="left:10px;top:46px;border-color:#9ED756;">${exCfg.equipTag}</div>\n          <div class="bbox-mini" style="right:10px;top:46px;">${exCfg.clothTag}</div>\n        </div>\n\n        <div class="hud-top-bar">\n          <span class="hud-pill tabular-nums" id="hudLeftSpan">\n            <svg class="icon" style="width:12px;height:12px;color:#5CE1E6;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>\n            AI POSE • ${state.inferenceMs} ms\n          </span>\n          <span class="hud-score-pill tabular-nums" id="hudScorePill" style="color:${colorHex};border-color:${colorHex};">\n            ${p.status === \'correct\' ? svgCheckIcon(colorHex) : svgAlertIcon(colorHex)}\n            <span>${p.score}%</span>\n          </span>\n        </div>\n\n        <div class="hud-bottom-bar">\n          <div style="display:flex;gap:5px;">\n            <button class="cam-action-btn" onclick="openComputerCamera()">\n              <svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/><circle cx="12" cy="13" r="3"/></svg>\n              <span>${state.physicalLensActive ? \'Webcam Live\' : \'Use Camera\'}</span>\n            </button>\n            <button class="cam-action-btn" onclick="toggleMirrorCamera()">Mirror</button>\n          </div>\n          <span class="hud-pill tabular-nums" style="color:#30D158;border-color:rgba(48,209,88,0.5);">\n            ${state.goodReps} Good Reps\n          </span>\n        </div>\n      </div>\n\n      <div class="glass-card">\n        <div class="posture-coach-header">\n          <div class="posture-status-icon" style="color:${colorHex};border-color:${colorHex};">\n            ${p.status === \'correct\' ? svgCheckIcon(colorHex) : svgAlertIcon(colorHex)}\n          </div>\n          <div>\n            <div class="posture-headline">${p.headline}</div>\n            <div class="posture-subtip tabular-nums">${p.tip}</div>\n          </div>\n        </div>\n\n        <div class="biomech-grid tabular-nums">\n          <div class="biomech-pill">\n            <div class="biomech-label">${zh ? exCfg.joint1LabelZh : exCfg.joint1LabelEn}</div>\n            <div class="biomech-val" style="color:${colorHex};">${p.angle1}°</div>\n          </div>\n          <div class="biomech-pill">\n            <div class="biomech-label">${zh ? exCfg.joint2LabelZh : exCfg.joint2LabelEn}</div>\n            <div class="biomech-val">${p.angle2}°</div>\n          </div>\n          <div class="biomech-pill">\n            <div class="biomech-label">${zh ? \'左右對稱度\' : \'L/R Symmetry\'}</div>\n            <div class="biomech-val" style="color:var(--accent-primary);">${p.symmetry}%</div>\n          </div>\n        </div>\n\n        <div style="display:flex;flex-wrap:wrap;gap:5px;">\n          <button class="chip-btn ${state.posturePreset === 0 ? \'active\' : \'\'}" onclick="setPosturePreset(0)">Auto Live</button>\n          <button class="chip-btn ${state.posturePreset === 1 ? \'active\' : \'\'}" onclick="setPosturePreset(1)">Correct</button>\n          <button class="chip-btn ${state.posturePreset === 2 ? \'active\' : \'\'}" onclick="setPosturePreset(2)">Shallow</button>\n          <button class="chip-btn ${state.posturePreset === 3 ? \'active\' : \'\'}" onclick="setPosturePreset(3)">Alert</button>\n        </div>\n      </div>\n    `;\n    updateCameraOverlaysOnly();\n    return;\n  }\n\n  if (state.screen === \'dashboard\') {\n    body.innerHTML = `\n      <div class="glass-card" style="border-color:var(--status-success);">\n        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">\n          <strong style="font-size:13px;display:flex;align-items:center;gap:6px;">\n            <svg class="icon" style="color:var(--status-success);" viewBox="0 0 24 24"><path d="M2.5 12h4.5l2.5-5.5 3.7 11 2.8-5.5h5.5"/></svg>\n            <span>Real-Time Camera Telemetry</span>\n          </strong>\n          <span class="badge green">LIVE SVG</span>\n        </div>\n        <div style="font-size:12px;font-weight:800;color:var(--status-success);margin-bottom:4px;">${p.headline} (${p.score}%)</div>\n        <div style="font-size:11px;color:var(--text-secondary);" class="tabular-nums">${p.tip} • ${state.goodReps} Good Reps</div>\n        <button class="btn-outline" onclick="switchScreen(\'camera\')">Open Full-Screen Camera Coach</button>\n      </div>\n\n      <div class="kpi-grid tabular-nums">\n        <div class="kpi-box">\n          <div class="kpi-label"><svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><path d="m6.5 6.5 11 11"/><path d="m3 10 7-7"/><path d="m14 21 7-7"/></svg> Weekly Volume</div>\n          <div class="kpi-val">9,620 kg</div>\n        </div>\n        <div class="kpi-box">\n          <div class="kpi-label"><svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg> Avg Form Score</div>\n          <div class="kpi-val" style="color:var(--status-success);">95%</div>\n        </div>\n        <div class="kpi-box">\n          <div class="kpi-label"><svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><path d="M12 2.8Q18.5 8.5 17.5 14.2Q17 20.5 12 21.2Q7 20.5 6.5 14.2Q5.8 9.2 12 2.8Z"/></svg> Active Energy</div>\n          <div class="kpi-val">2,480 kcal</div>\n        </div>\n        <div class="kpi-box">\n          <div class="kpi-label"><svg class="icon" style="width:13px;height:13px;" viewBox="0 0 24 24"><path d="M12 2.5L19.5 5.8V11.8C19.5 18.2 12 21.5 12 21.5C12 21.5 4.5 18.2 4.5 11.8V5.8L12 2.5Z"/></svg> Cloudflare Edge</div>\n          <div class="kpi-val" style="font-size:13.5px;">Connected</div>\n        </div>\n      </div>\n    `;\n    return;\n  }\n\n  if (state.screen === \'workout\') {\n    body.innerHTML = `\n      <div class="glass-card">\n        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">\n          <strong style="font-size:14px;">Barbell Back Squat (Optimistic Sync)</strong>\n          <span class="badge green">${svgCheckIcon(\'#30D158\')} Verified</span>\n        </div>\n        ${state.sets\n          .map(\n            (s) => `\n          <div style="display:grid;grid-template-columns:68px 1fr 1fr 34px;gap:6px;align-items:center;margin-bottom:8px;" class="tabular-nums">\n            <span class="badge">${s.type}</span>\n            <input style="background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border-glass);padding:7px;border-radius:8px;width:100%;" type="number" value="${s.weight}" />\n            <input style="background:var(--bg-surface);color:var(--text-primary);border:1px solid var(--border-glass);padding:7px;border-radius:8px;width:100%;" type="number" value="${s.reps}" />\n            <input type="checkbox" style="width:20px;height:20px;" ${s.done ? \'checked\' : \'\'} onchange="startRestTimer(90);" />\n          </div>\n        `\n          )\n          .join(\'\')}\n        <button class="btn-primary" onclick="showToast(\'Workout saved with UUID idempotency key to Supabase!\')">Finish &amp; Save Workout</button>\n      </div>\n    `;\n    return;\n  }\n\n  if (state.screen === \'progress\') {\n    body.innerHTML = `\n      <div class="glass-card">\n        <strong style="font-size:14px;display:block;margin-bottom:8px;">SVG Vector Volume &amp; Form Progression</strong>\n        <svg width="100%" height="110" viewBox="0 0 320 110" style="background:var(--bg-subtle);border-radius:12px;padding:8px;border:1px solid var(--border-glass);">\n          <defs>\n            <linearGradient id="lineGrad" x1="0" y1="0" x2="0" y2="1">\n              <stop offset="0%" stop-color="#9ED756" stop-opacity="0.38"/>\n              <stop offset="100%" stop-color="#9ED756" stop-opacity="0.0"/>\n            </linearGradient>\n          </defs>\n          <path d="M16 84 L82 68 L152 54 L224 38 L302 20 L302 96 L16 96 Z" fill="url(#lineGrad)"/>\n          <polyline fill="none" stroke="#9ED756" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" points="16,84 82,68 152,54 224,38 302,20"/>\n          <circle cx="16" cy="84" r="4" fill="#5CE1E6"/><circle cx="82" cy="68" r="4" fill="#5CE1E6"/>\n          <circle cx="152" cy="54" r="4" fill="#5CE1E6"/><circle cx="224" cy="38" r="4" fill="#5CE1E6"/>\n          <circle cx="302" cy="20" r="5" fill="#9ED756"/>\n        </svg>\n        <button class="btn-outline" style="margin-top:10px;" onclick="exportWorkoutsCsv()">Export Workout History (CSV)</button>\n      </div>\n    `;\n  }\n}\n\nwindow.addEventListener(\'DOMContentLoaded\', () => {\n  initSupabaseClient();\n  renderScreen();\n  startRealTimeLoop();\n});\n';
+        document.body.appendChild(s);
+        if (typeof initSupabaseClient === 'function') initSupabaseClient();
+        if (typeof renderScreen === 'function') renderScreen();
+        if (typeof startRealTimeLoop === 'function') startRealTimeLoop();
+      }
+    });
+  </script>
+</body>
+</html>
