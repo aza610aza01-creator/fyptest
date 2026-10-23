@@ -1,0 +1,12 @@
+{
+  "name": "ai-gym-cloud",
+  "version": "5.2.0",
+  "private": true,
+  "description": "AI Gym Cloud v5.2 — Pure SVG Web App & Supabase 6-Digit OTP Build for Cloudflare",
+  "scripts": {
+    "build": "echo \"Static HTML/CSS/JS assets ready in ./public and ./dist\"",
+    "dev": "npx wrangler dev --assets=./public",
+    "deploy": "npx wrangler deploy --assets=./public",
+    "pages:deploy": "npx wrangler pages deploy ./public --project-name=ai-gym-cloud"
+  }
+}
