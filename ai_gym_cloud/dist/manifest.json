@@ -1,0 +1,8 @@
+{
+  "name": "AI Gym Cloud v5.2",
+  "short_name": "AI Gym Cloud",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#070B10",
+  "theme_color": "#9ED756"
+}

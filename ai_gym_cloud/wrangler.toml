@@ -1,0 +1,11 @@
+name = "ai-gym-cloud"
+compatibility_date = "2025-01-01"
+
+[assets]
+directory = "./public"
+not_found_handling = "single-page-application"
+
+[vars]
+SUPABASE_URL = "https://eprmvrtcpuydxhtzwfep.supabase.co"
+SUPABASE_PUBLISHABLE_KEY = "sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP"
+SMTP_BUILD_DOMAIN = "aigymcloud.build"
