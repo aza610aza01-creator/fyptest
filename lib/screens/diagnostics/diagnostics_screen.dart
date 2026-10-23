@@ -135,6 +135,14 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                         icon: Icons.security,
                       ),
                       _kvRow(
+                        'Supabase Project',
+                        widget.config.supabaseProjectName,
+                      ),
+                      _kvRow(
+                        'Supabase Organization',
+                        widget.config.supabaseOrgName,
+                      ),
+                      _kvRow(
                         'Supabase Configured',
                         widget.config.isConfigured ? 'YES' : 'NO',
                       ),
@@ -197,11 +205,11 @@ class _DiagnosticsScreenState extends State<DiagnosticsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SectionHeader(
-                        title: 'Camera, ML Kit & Local Preferences State',
+                        title: 'Camera, YOLOv8 / ML Kit & Preferences State',
                         icon: Icons.tune,
                       ),
                       _kvRow('Camera State', d.cameraState),
-                      _kvRow('Object Detector State', d.detectorState),
+                      _kvRow('YOLO / Object Detector State', d.detectorState),
                       _kvRow('Last Sync State', widget.prefs.lastSyncState),
                       for (final entry in prefSnap.entries)
                         _kvRow('Pref: ${entry.key}', '${entry.value}'),

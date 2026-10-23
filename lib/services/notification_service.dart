@@ -1,20 +1,31 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
-/// Manages the workout Rest Timer, +/- duration adjustments, workout reminders,
-/// and streak warnings with haptic/system sound feedback.
+/// Manages the workout Rest Timer using absolute UTC end timestamps so that
+/// backgrounding, lifecycle pauses, or app restarts recover remaining seconds
+/// accurately without duplicate timers or duplicate notifications.
 class NotificationService extends ChangeNotifier {
   Timer? _countdownTimer;
+  DateTime? _targetEndUtc;
   int _remainingSeconds = 0;
   int _totalSeconds = 90;
   bool _isRunning = false;
+  bool _hapticsEnabled = true;
   String? _activeBannerMessage;
 
   int get remainingSeconds => _remainingSeconds;
+  int get remainingRestSeconds => _remainingSeconds;
   int get totalSeconds => _totalSeconds;
   bool get isRunning => _isRunning;
+  bool get hapticsEnabled => _hapticsEnabled;
+  DateTime? get targetEndUtc => _targetEndUtc;
   String? get activeBannerMessage => _activeBannerMessage;
+
+  void setHapticsEnabled(bool enabled) {
+    _hapticsEnabled = enabled;
+  }
 
   double get progress {
     if (_totalSeconds <= 0) return 0;
@@ -27,30 +38,94 @@ class NotificationService extends ChangeNotifier {
     return '$mins:$secs';
   }
 
-  void startRestTimer(int seconds, {bool isZh = false}) {
+  void startRestTimer(
+    int seconds, {
+    bool isZh = false,
+    DateTime? nowOverrideUtc,
+  }) {
     _countdownTimer?.cancel();
     _totalSeconds = seconds.clamp(5, 1800);
     _remainingSeconds = _totalSeconds;
+    final nowUtc = (nowOverrideUtc ?? DateTime.now()).toUtc();
+    _targetEndUtc = nowUtc.add(Duration(seconds: _totalSeconds));
     _isRunning = true;
     _activeBannerMessage = null;
     notifyListeners();
 
+    _attachPeriodicTicker(isZh: isZh);
+  }
+
+  /// Recovers an active rest timer from an absolute UTC end timestamp after
+  /// app restart or lifecycle resume.
+  void recoverFromTimestamp(
+    DateTime? targetEndUtc, {
+    int totalSeconds = 90,
+    bool isZh = false,
+    DateTime? nowOverrideUtc,
+  }) {
+    _countdownTimer?.cancel();
+    if (targetEndUtc == null) return;
+    final nowUtc = (nowOverrideUtc ?? DateTime.now()).toUtc();
+    final diffSeconds = targetEndUtc.toUtc().difference(nowUtc).inSeconds;
+    _totalSeconds = totalSeconds.clamp(5, 1800);
+
+    if (diffSeconds <= 0) {
+      _targetEndUtc = null;
+      _remainingSeconds = 0;
+      _isRunning = false;
+      _activeBannerMessage = isZh
+          ? '組間休息結束！準備開始下一組訓練。'
+          : 'Rest timer complete! Ready for your next set.';
+      notifyListeners();
+      return;
+    }
+
+    _targetEndUtc = targetEndUtc.toUtc();
+    _remainingSeconds = diffSeconds.clamp(1, 1800);
+    if (_remainingSeconds > _totalSeconds) {
+      _totalSeconds = _remainingSeconds;
+    }
+    _isRunning = true;
+    notifyListeners();
+    _attachPeriodicTicker(isZh: isZh);
+  }
+
+  void _attachPeriodicTicker({required bool isZh}) {
+    _countdownTimer?.cancel();
     _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_remainingSeconds > 1) {
-        _remainingSeconds -= 1;
+      final nowUtc = DateTime.now().toUtc();
+      final computedRemaining = _targetEndUtc != null
+          ? _targetEndUtc!.difference(nowUtc).inSeconds
+          : (_remainingSeconds - 1);
+
+      if (computedRemaining > 0) {
+        _remainingSeconds = computedRemaining;
         notifyListeners();
       } else {
         timer.cancel();
+        _targetEndUtc = null;
         _remainingSeconds = 0;
         _isRunning = false;
         _activeBannerMessage = isZh
             ? '組間休息結束！準備開始下一組訓練。'
             : 'Rest timer complete! Ready for your next set.';
-        HapticFeedback.mediumImpact();
-        SystemSound.play(SystemSoundType.alert);
+        if (_hapticsEnabled) {
+          HapticFeedback.mediumImpact();
+          SystemSound.play(SystemSoundType.alert);
+        }
         notifyListeners();
       }
     });
+  }
+
+  void onAppLifecycleChanged(AppLifecycleState state, {bool isZh = false}) {
+    if (state == AppLifecycleState.resumed && _targetEndUtc != null) {
+      recoverFromTimestamp(
+        _targetEndUtc,
+        totalSeconds: _totalSeconds,
+        isZh: isZh,
+      );
+    }
   }
 
   void adjustRestSeconds(int deltaSeconds) {
@@ -66,12 +141,15 @@ class NotificationService extends ChangeNotifier {
     if (_remainingSeconds == 0) {
       stopRestTimer();
     } else {
+      _targetEndUtc =
+          DateTime.now().toUtc().add(Duration(seconds: _remainingSeconds));
       notifyListeners();
     }
   }
 
   void stopRestTimer() {
     _countdownTimer?.cancel();
+    _targetEndUtc = null;
     _remainingSeconds = 0;
     _isRunning = false;
     notifyListeners();

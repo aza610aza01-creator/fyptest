@@ -6,20 +6,31 @@ import 'package:ai_gym_flutter/services/notification_service.dart';
 class RestTimerBanner extends StatelessWidget {
   const RestTimerBanner({
     super.key,
-    required this.notifications,
+    this.notifications,
+    this.notificationService,
+    this.glassEnabled = true,
     required this.isZh,
-  });
+  }) : assert(
+         notifications != null || notificationService != null,
+         'Either notifications or notificationService must be provided.',
+       );
 
-  final NotificationService notifications;
+  final NotificationService? notifications;
+  final NotificationService? notificationService;
+  final bool glassEnabled;
   final bool isZh;
+
+  NotificationService get _activeNotifications =>
+      notifications ?? notificationService!;
 
   @override
   Widget build(BuildContext context) {
+    final active = _activeNotifications;
     return ListenableBuilder(
-      listenable: notifications,
+      listenable: active,
       builder: (context, _) {
-        final running = notifications.isRunning;
-        final bannerMsg = notifications.activeBannerMessage;
+        final running = active.isRunning;
+        final bannerMsg = active.activeBannerMessage;
         if (!running && bannerMsg == null) {
           return const SizedBox.shrink();
         }
@@ -31,7 +42,7 @@ class RestTimerBanner extends StatelessWidget {
             margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: scheme.surface.withValues(alpha: 0.92),
+              color: scheme.surface.withValues(alpha: glassEnabled ? 0.90 : 0.98),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: GlassTheme.limeAccent, width: 1.4),
             ),
@@ -47,8 +58,8 @@ class RestTimerBanner extends StatelessWidget {
                           children: [
                             Text(
                               isZh
-                                  ? '組間休息計時：${notifications.formattedRemaining}'
-                                  : 'Rest Timer: ${notifications.formattedRemaining}',
+                                  ? '組間休息計時：${active.formattedRemaining}'
+                                  : 'Rest Timer: ${active.formattedRemaining}',
                               style: const TextStyle(
                                 fontWeight: FontWeight.w700,
                                 fontSize: 14,
@@ -56,7 +67,7 @@ class RestTimerBanner extends StatelessWidget {
                             ),
                             const SizedBox(height: 4),
                             LinearProgressIndicator(
-                              value: notifications.progress,
+                              value: active.progress,
                               backgroundColor:
                                   scheme.outlineVariant.withValues(alpha: 0.3),
                               color: GlassTheme.limeAccent,
@@ -66,17 +77,17 @@ class RestTimerBanner extends StatelessWidget {
                       ),
                       IconButton(
                         tooltip: '-15s',
-                        onPressed: () => notifications.adjustRestSeconds(-15),
+                        onPressed: () => active.adjustRestSeconds(-15),
                         icon: const Icon(Icons.remove_circle_outline),
                       ),
                       IconButton(
                         tooltip: '+15s',
-                        onPressed: () => notifications.adjustRestSeconds(15),
+                        onPressed: () => active.adjustRestSeconds(15),
                         icon: const Icon(Icons.add_circle_outline),
                       ),
                       IconButton(
                         tooltip: isZh ? '停止計時' : 'Stop Timer',
-                        onPressed: notifications.stopRestTimer,
+                        onPressed: active.stopRestTimer,
                         icon: const Icon(Icons.close),
                       ),
                     ],
@@ -95,7 +106,7 @@ class RestTimerBanner extends StatelessWidget {
                         ),
                       ),
                       IconButton(
-                        onPressed: notifications.dismissBanner,
+                        onPressed: active.dismissBanner,
                         icon: const Icon(Icons.close),
                       ),
                     ],

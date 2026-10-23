@@ -1,9 +1,42 @@
-/// Pure calculation utilities for 1RM, volume, unit conversion, and coaching.
+/// Pure calculation utilities for 1RM, BMI, BMR, TDEE, volume, unit conversion, and coaching.
 class FitnessCalculators {
   FitnessCalculators._();
 
   static const double kgToLbRatio = 2.2046226218;
   static const double kmToMiRatio = 0.6213711922;
+
+  /// Calculates Body Mass Index (BMI = weightKg / heightM^2).
+  static double calculateBmi({
+    required double weightKg,
+    required double heightCm,
+  }) {
+    if (weightKg <= 0 || heightCm <= 0) return 0.0;
+    final heightM = heightCm / 100.0;
+    return weightKg / (heightM * heightM);
+  }
+
+  /// Calculates Basal Metabolic Rate (BMR) via the Mifflin-St Jeor equation.
+  static double calculateBmr({
+    required double weightKg,
+    required double heightCm,
+    required int age,
+    String gender = 'male',
+    bool? isMale,
+  }) {
+    if (weightKg <= 0 || heightCm <= 0 || age <= 0) return 0.0;
+    final male = isMale ?? (gender.toLowerCase() != 'female');
+    final base = (10.0 * weightKg) + (6.25 * heightCm) - (5.0 * age);
+    return male ? base + 5.0 : base - 161.0;
+  }
+
+  /// Estimates Total Daily Energy Expenditure (TDEE) from BMR and activity factor.
+  static double calculateTdee({
+    required double bmr,
+    double activityMultiplier = 1.55,
+  }) {
+    if (bmr <= 0 || activityMultiplier <= 0) return 0.0;
+    return bmr * activityMultiplier;
+  }
 
   /// Epley estimated 1RM formula. Returns 0 when inputs are insufficient.
   static double estimateOneRepMax({

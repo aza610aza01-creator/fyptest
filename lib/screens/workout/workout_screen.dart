@@ -64,12 +64,102 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   double _cardioDistance = 3.5;
   int _cardioHeartRate = 142;
 
+  WorkoutDraftData? _recoverableDraft;
+
   @override
   void initState() {
     super.initState();
     _selectedExerciseId = widget.exercises.isNotEmpty
         ? widget.exercises.first.id
         : 'seed-squat';
+    _recoverableDraft = widget.prefs.getWorkoutDraft(widget.userId);
+    final savedTimerUtc = widget.prefs.getRestTimerEndUtc();
+    if (savedTimerUtc != null) {
+      widget.notifications.recoverFromTimestamp(
+        savedTimerUtc,
+        totalSeconds: widget.prefs.defaultRestSeconds,
+        isZh: widget.prefs.languageCode.toLowerCase().startsWith('zh'),
+      );
+    }
+  }
+
+  Future<void> _autosaveCurrentDraft() async {
+    final draft = WorkoutDraftData(
+      userId: widget.userId,
+      title: _titleCtrl.text.trim().isEmpty
+          ? 'Strength & Hypertrophy Session'
+          : _titleCtrl.text.trim(),
+      selectedExerciseId: _selectedExerciseId,
+      selectedSetType: _selectedSetType,
+      weightValue: _weightValue,
+      repsValue: _repsValue,
+      rpeValue: _rpeValue,
+      rirValue: _rirValue,
+      sessionNotes: _sessionNotesCtrl.text.trim(),
+      startedAtUtc: _sessionStart,
+      sets: List<WorkoutSetRecord>.from(_activeSets),
+      restTimerEndUtc: widget.notifications.targetEndUtc,
+    );
+    await widget.prefs.saveWorkoutDraft(draft);
+    await widget.prefs.setRestTimerEndUtc(widget.notifications.targetEndUtc);
+  }
+
+  void _restoreDraft(WorkoutDraftData draft, bool isZh) {
+    setState(() {
+      _titleCtrl.text = draft.title;
+      _selectedExerciseId = draft.selectedExerciseId;
+      _selectedSetType = draft.selectedSetType;
+      _weightValue = draft.weightValue;
+      _repsValue = draft.repsValue;
+      _rpeValue = draft.rpeValue;
+      _rirValue = draft.rirValue;
+      _sessionNotesCtrl.text = draft.sessionNotes;
+      _sessionStart = draft.startedAtUtc;
+      _activeSets
+        ..clear()
+        ..addAll(draft.sets);
+      _recoverableDraft = null;
+    });
+    if (draft.restTimerEndUtc != null) {
+      widget.notifications.recoverFromTimestamp(
+        draft.restTimerEndUtc,
+        totalSeconds: widget.prefs.defaultRestSeconds,
+        isZh: isZh,
+      );
+    }
+  }
+
+  Future<void> _confirmAndDiscardDraft(bool isZh) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isZh ? '捨棄進行中的訓練草稿？' : 'Discard Active Workout Draft?'),
+        content: Text(
+          isZh
+              ? '確定要捨棄目前未完成的訓練草稿嗎？草稿內尚未儲存的組數將會被移除。'
+              : 'Are you sure you want to discard your active workout draft? Unsaved sets in this draft will be removed.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(isZh ? '取消' : 'Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(isZh ? '確定捨棄' : 'Discard Draft'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await widget.prefs.clearWorkoutDraft(widget.userId);
+      await widget.prefs.setRestTimerEndUtc(null);
+      if (!mounted) return;
+      setState(() {
+        _recoverableDraft = null;
+        _activeSets.clear();
+      });
+    }
   }
 
   @override
@@ -125,6 +215,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         isZh: isZh,
       );
     }
+    _autosaveCurrentDraft();
   }
 
   void _swapExerciseSet(int index, Exercise replacement) {
@@ -213,6 +304,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   }
 
   Future<void> _finishWorkout(bool isZh) async {
+    if (_isSaving) return;
     if (_activeSets.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -355,6 +447,47 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
     return ListView(
       padding: const EdgeInsets.fromLTRB(16, 12, 16, 96),
       children: [
+        if (_recoverableDraft != null && _activeSets.isEmpty)
+          GlassPanel(
+            glassEnabled: glass,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.restore_rounded, color: Color(0xFF30D158)),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        isZh
+                            ? '恢復未完成的訓練草稿：${_recoverableDraft!.title}（${_recoverableDraft!.sets.length} 組）'
+                            : 'Recoverable Draft Found: ${_recoverableDraft!.title} (${_recoverableDraft!.sets.length} sets)',
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    FilledButton.icon(
+                      onPressed: () =>
+                          _restoreDraft(_recoverableDraft!, isZh),
+                      icon: const Icon(Icons.play_arrow_rounded),
+                      label: Text(strings.tr('resume_workout')),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _confirmAndDiscardDraft(isZh),
+                      icon: const Icon(Icons.delete_outline),
+                      label: Text(strings.tr('discard_workout')),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         if (widget.routines.isNotEmpty)
           GlassPanel(
             glassEnabled: glass,

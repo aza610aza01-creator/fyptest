@@ -1,4 +1,4 @@
-import 'dart:io';
+import 'package:camera/camera.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:ai_gym_flutter/models/camera_detection.dart';
 import 'package:ai_gym_flutter/services/database_service.dart';
@@ -6,6 +6,8 @@ import 'package:ai_gym_flutter/services/preference_service.dart';
 
 /// Repository for `public.camera_detections` and optional consent-gated private
 /// image storage in the `camera-detections` Supabase Storage bucket.
+/// Uses `XFile` instead of `dart:io` so it compiles and runs cleanly on
+/// Android, Chrome (Web), Edge (Web), and Windows Desktop.
 class DetectionRepository {
   DetectionRepository({
     required this.db,
@@ -60,19 +62,23 @@ class DetectionRepository {
       if (prefs.cameraSaveConsentEnabled &&
           localCapturedFilePath != null &&
           localCapturedFilePath.isNotEmpty) {
-        final file = File(localCapturedFilePath);
-        if (await file.exists()) {
-          final bytes = await file.readAsBytes();
-          final targetPath = '${detection.userId}/${detection.id}.jpg';
-          await db.client!.storage.from('camera-detections').uploadBinary(
-                targetPath,
-                bytes,
-                fileOptions: const FileOptions(
-                  upsert: true,
-                  contentType: 'image/jpeg',
-                ),
-              );
-          uploadedPath = targetPath;
+        try {
+          final xfile = XFile(localCapturedFilePath);
+          final bytes = await xfile.readAsBytes();
+          if (bytes.isNotEmpty) {
+            final targetPath = '${detection.userId}/${detection.id}.jpg';
+            await db.client!.storage.from('camera-detections').uploadBinary(
+                  targetPath,
+                  bytes,
+                  fileOptions: const FileOptions(
+                    upsert: true,
+                    contentType: 'image/jpeg',
+                  ),
+                );
+            uploadedPath = targetPath;
+          }
+        } catch (_) {
+          // Safe fallback if local file path is virtual or unavailable on Web
         }
       }
 

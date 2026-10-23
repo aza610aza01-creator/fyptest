@@ -206,6 +206,37 @@ class SettingsScreen extends StatelessWidget {
                 value: prefs.oneHandedControlsEnabled,
                 onChanged: prefs.setOneHandedControlsEnabled,
               ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(strings.tr('reduced_motion')),
+                value: prefs.reducedMotionEnabled,
+                onChanged: prefs.setReducedMotionEnabled,
+              ),
+              SwitchListTile(
+                key: const Key('settings_developer_mode_toggle'),
+                contentPadding: EdgeInsets.zero,
+                title: Text(strings.tr('developer_mode')),
+                subtitle: Text(strings.tr('developer_mode_subtitle')),
+                value: prefs.developerModeEnabled,
+                onChanged: prefs.setDeveloperModeEnabled,
+              ),
+              if (prefs.developerModeEnabled || user.isAdmin)
+                SwitchListTile(
+                  key: const Key('settings_ios_preview_toggle'),
+                  contentPadding: EdgeInsets.zero,
+                  title: Text(
+                    isZh
+                        ? 'iOS 18 / Android 模擬預覽外框（開發者預覽）'
+                        : 'Simulated iOS 18 / Android Shell (Developer Preview)',
+                  ),
+                  subtitle: Text(
+                    isZh
+                        ? '注意：預覽狀態列之訊號、電量與 9:41 時間僅供開發者界面檢視，並非真實系統數值。'
+                        : 'Note: Simulated status bar signal, battery, and 9:41 clock are labeled PREVIEW and do not represent real device telemetry.',
+                  ),
+                  value: prefs.iosPreviewModeEnabled,
+                  onChanged: prefs.setIosPreviewModeEnabled,
+                ),
             ],
           ),
         ),
@@ -280,6 +311,18 @@ class SettingsScreen extends StatelessWidget {
                 title: Text(isZh ? '訓練與連勝提醒通知' : 'Workout & Streak Reminders'),
                 value: prefs.workoutRemindersEnabled,
                 onChanged: prefs.setWorkoutRemindersEnabled,
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(strings.tr('haptics_feedback')),
+                value: prefs.hapticsEnabled,
+                onChanged: prefs.setHapticsEnabled,
+              ),
+              SwitchListTile(
+                contentPadding: EdgeInsets.zero,
+                title: Text(strings.tr('wifi_only_sync')),
+                value: prefs.wifiOnlySyncEnabled,
+                onChanged: prefs.setWifiOnlySyncEnabled,
               ),
             ],
           ),

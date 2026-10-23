@@ -23,6 +23,9 @@ class DatabaseService {
   SupabaseClient? get client =>
       supabaseInitialized ? Supabase.instance.client : null;
 
+  /// Returns true when Supabase is initialized and the database client is ready.
+  bool get isConnected => supabaseInitialized && client != null;
+
   /// Tests Supabase Authentication endpoint status for Admin Tools.
   Future<String> runAuthConnectionTest() async {
     if (!supabaseInitialized || client == null) {

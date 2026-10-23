@@ -459,24 +459,16 @@ class _ProgressScreenState extends State<ProgressScreen> {
         : injuries.join(', ');
 
     if (isZh) {
-      return '• 4週週期化建議（目標：$goal｜器材：$equip｜每週 $_daysPerWeek 天｜傷患標記：$injuryNote）：
-'
-          '  第 1-2 週：累積期 (RPE 7.5-8.0，專注標準動作控制)
-'
-          '  第 3 週：強化超負荷期 (目標重量 +2.5% 或每組 +1 次)
-'
-          '  第 4 週：減量恢復週 Deload (訓練量降低 20%，安排主動恢復日)
-'
+      return '• 4週週期化建議（目標：$goal｜器材：$equip｜每週 $_daysPerWeek 天｜傷患標記：$injuryNote）：\n'
+          '  第 1-2 週：累積期 (RPE 7.5-8.0，專注標準動作控制)\n'
+          '  第 3 週：強化超負荷期 (目標重量 +2.5% 或每組 +1 次)\n'
+          '  第 4 週：減量恢復週 Deload (訓練量降低 20%，安排主動恢復日)\n'
           '  *註：以上為一般體能訓練原則，並非醫療診斷或處方。';
     }
-    return '• 4-Week Periodised Block (Goal: $goal | Equipment: $equip | $_daysPerWeek days/wk | Flags: $injuryNote):
-'
-        '  Weeks 1-2: Accumulation (RPE 7.5-8.0, controlled tempo)
-'
-        '  Week 3: Intensification (+2.5% load or +1 rep on primary compounds)
-'
-        '  Week 4: Deload & Recovery (-20% volume, active mobility focus)
-'
+    return '• 4-Week Periodised Block (Goal: $goal | Equipment: $equip | $_daysPerWeek days/wk | Flags: $injuryNote):\n'
+        '  Weeks 1-2: Accumulation (RPE 7.5-8.0, controlled tempo)\n'
+        '  Week 3: Intensification (+2.5% load or +1 rep on primary compounds)\n'
+        '  Week 4: Deload & Recovery (-20% volume, active mobility focus)\n'
         '  *Note: General fitness guidance only, not medical advice.';
   }
 

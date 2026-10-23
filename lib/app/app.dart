@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:ai_gym_flutter/app/responsive_app_shell.dart';
+import 'package:ai_gym_flutter/controllers/app_startup_controller.dart';
+import 'package:ai_gym_flutter/controllers/auth_flow_controller.dart';
+import 'package:ai_gym_flutter/controllers/health_controller.dart';
+import 'package:ai_gym_flutter/controllers/navigation_controller.dart';
+import 'package:ai_gym_flutter/controllers/sync_controller.dart';
+import 'package:ai_gym_flutter/controllers/user_data_controller.dart';
+import 'package:ai_gym_flutter/controllers/workout_controller.dart';
 import 'package:ai_gym_flutter/core/constants/app_config.dart';
 import 'package:ai_gym_flutter/core/localization/app_localizations.dart';
 import 'package:ai_gym_flutter/core/theme/glass_theme.dart';
 import 'package:ai_gym_flutter/core/widgets/glass_widgets.dart';
 import 'package:ai_gym_flutter/models/app_user.dart';
-import 'package:ai_gym_flutter/models/body_measurement.dart';
-import 'package:ai_gym_flutter/models/camera_detection.dart';
-import 'package:ai_gym_flutter/models/exercise.dart';
-import 'package:ai_gym_flutter/models/health_and_coaching_models.dart';
-import 'package:ai_gym_flutter/models/routine.dart';
-import 'package:ai_gym_flutter/models/user_profile.dart';
-import 'package:ai_gym_flutter/models/workout.dart';
 import 'package:ai_gym_flutter/repositories/detection_repository.dart';
 import 'package:ai_gym_flutter/repositories/exercise_repository.dart';
 import 'package:ai_gym_flutter/repositories/measurement_repository.dart';
@@ -18,23 +19,28 @@ import 'package:ai_gym_flutter/repositories/profile_repository.dart';
 import 'package:ai_gym_flutter/repositories/workout_repository.dart';
 import 'package:ai_gym_flutter/screens/auth/auth_screen.dart';
 import 'package:ai_gym_flutter/screens/auth/otp_verification_screen.dart';
-import 'package:ai_gym_flutter/screens/body_health/body_health_screen.dart';
 import 'package:ai_gym_flutter/screens/camera_detection/camera_detection_screen.dart';
 import 'package:ai_gym_flutter/screens/dashboard/dashboard_screen.dart';
-import 'package:ai_gym_flutter/screens/exercise_library/exercise_library_screen.dart';
+import 'package:ai_gym_flutter/screens/more/more_screen.dart';
 import 'package:ai_gym_flutter/screens/onboarding/onboarding_screen.dart';
 import 'package:ai_gym_flutter/screens/progress/progress_screen.dart';
-import 'package:ai_gym_flutter/screens/settings/settings_screen.dart';
+import 'package:ai_gym_flutter/screens/workout/workout_screen.dart';
 import 'package:ai_gym_flutter/services/auth_service.dart';
 import 'package:ai_gym_flutter/services/camera_detection_service.dart';
 import 'package:ai_gym_flutter/services/database_service.dart';
 import 'package:ai_gym_flutter/services/diagnostics_service.dart';
 import 'package:ai_gym_flutter/services/notification_service.dart';
 import 'package:ai_gym_flutter/services/preference_service.dart';
-import 'package:ai_gym_flutter/widgets/rest_timer_banner.dart';
 
-/// Root application widget managing reactive Theme, Glassmorphism, Localization,
-/// Accessible Text Scaling, Auth/OTP gating, and Navigation tabs.
+/// Root application widget refactored in v4.0 to delegate responsibilities to
+/// focused controllers (`AppStartupController`, `AuthFlowController`,
+/// `UserDataController`, `NavigationController`, `WorkoutController`,
+/// `HealthController`, `SyncController`, and `ResponsiveAppShell`).
+///
+/// Performance guarantee: `MaterialApp` only listens to `prefs`,
+/// `authFlowController`, and `userDataController`—never `cameraService` or
+/// `notifications`—so high-frequency camera inference latency or rest-timer
+/// ticks never rebuild `MaterialApp`.
 class AiGymCloudApp extends StatefulWidget {
   const AiGymCloudApp({
     super.key,
@@ -45,6 +51,7 @@ class AiGymCloudApp extends StatefulWidget {
     required this.authService,
     required this.dbService,
     required this.cameraService,
+    this.userDataControllerOverride,
   });
 
   final AppConfig config;
@@ -54,35 +61,36 @@ class AiGymCloudApp extends StatefulWidget {
   final AuthService authService;
   final DatabaseService dbService;
   final CameraDetectionService cameraService;
+  final UserDataController? userDataControllerOverride;
 
   @override
   State<AiGymCloudApp> createState() => _AiGymCloudAppState();
 }
 
-class _AiGymCloudAppState extends State<AiGymCloudApp> {
+class _AiGymCloudAppState extends State<AiGymCloudApp>
+    with WidgetsBindingObserver {
   late final ProfileRepository _profileRepo;
   late final ExerciseRepository _exerciseRepo;
   late final WorkoutRepository _workoutRepo;
   late final MeasurementRepository _measurementRepo;
   late final DetectionRepository _detectionRepo;
 
-  UserProfile? _profile;
-  List<Exercise> _exercises = Exercise.defaultSeedExercises();
-  List<WorkoutRecord> _workouts = const <WorkoutRecord>[];
-  List<WorkoutRoutine> _routines = const <WorkoutRoutine>[];
-  List<BodyMeasurement> _measurements = const <BodyMeasurement>[];
-  List<HealthLogRecord> _healthLogs = const <HealthLogRecord>[];
-  List<CameraDetectionRecord> _detections = const <CameraDetectionRecord>[];
-  List<UserGoalRecord> _goals = const <UserGoalRecord>[];
+  late final AppStartupController _startupController;
+  late final AuthFlowController _authFlowController;
+  late final UserDataController _userDataController;
+  late final NavigationController _navigationController;
+  late final WorkoutController _workoutController;
+  late final HealthController _healthController;
+  late final SyncController _syncController;
 
-  int _selectedIndex = 0;
-  bool _loadingUserData = false;
-  String _loadedUserId = '';
-  bool _openRegisterOnAuth = false;
+  bool _ownsUserDataController = false;
+  bool _guestMigrationPromptShown = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+
     _profileRepo = ProfileRepository(
       db: widget.dbService,
       prefs: widget.prefs,
@@ -100,103 +108,125 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
       db: widget.dbService,
       prefs: widget.prefs,
     );
-    widget.authService.addListener(_onAuthChanged);
-    _onAuthChanged();
+
+    _startupController = AppStartupController(
+      config: widget.config,
+      prefs: widget.prefs,
+      diagnostics: widget.diagnostics,
+      notifications: widget.notifications,
+    );
+    _authFlowController = AuthFlowController(
+      authService: widget.authService,
+      prefs: widget.prefs,
+    );
+    if (widget.userDataControllerOverride != null) {
+      _userDataController = widget.userDataControllerOverride!;
+      _ownsUserDataController = false;
+    } else {
+      _userDataController = UserDataController(
+        profileRepo: _profileRepo,
+        exerciseRepo: _exerciseRepo,
+        workoutRepo: _workoutRepo,
+        measurementRepo: _measurementRepo,
+        detectionRepo: _detectionRepo,
+        diagnostics: widget.diagnostics,
+      );
+      _ownsUserDataController = true;
+    }
+    _navigationController = NavigationController();
+    _workoutController = WorkoutController(
+      prefs: widget.prefs,
+      notifications: widget.notifications,
+    );
+    _healthController = HealthController();
+    _syncController = SyncController(
+      db: widget.dbService,
+      prefs: widget.prefs,
+      workoutRepo: _workoutRepo,
+      measurementRepo: _measurementRepo,
+      detectionRepo: _detectionRepo,
+      diagnostics: widget.diagnostics,
+    );
+
+    widget.authService.addListener(_onAuthStageChanged);
+    _onAuthStageChanged();
   }
 
   @override
   void dispose() {
-    widget.authService.removeListener(_onAuthChanged);
+    WidgetsBinding.instance.removeObserver(this);
+    widget.authService.removeListener(_onAuthStageChanged);
+    _startupController.dispose();
+    _authFlowController.dispose();
+    if (_ownsUserDataController) {
+      _userDataController.dispose();
+    }
+    _navigationController.dispose();
+    _workoutController.dispose();
+    _healthController.dispose();
+    _syncController.dispose();
     super.dispose();
   }
 
-  void _onAuthChanged() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final isZh = widget.prefs.languageCode.toLowerCase().startsWith('zh');
+    widget.notifications.onAppLifecycleChanged(state, isZh: isZh);
+  }
+
+  void _onAuthStageChanged() {
     final user = widget.authService.currentUser;
     if ((user.isFullyAuthenticated || user.isGuest) &&
-        user.id != _loadedUserId) {
-      _loadedUserId = user.id;
-      _loadAllUserData(user);
+        user.id != _userDataController.activeUserId) {
+      _userDataController.loadForUser(user);
     } else if (user.stage == AuthFlowStage.unauthenticated) {
-      setState(() {
-        _loadedUserId = '';
-        _profile = null;
-        _selectedIndex = 0;
-      });
+      _userDataController.resetOnSignOut();
+      _navigationController.resetOnSignOut();
+      _guestMigrationPromptShown = false;
     }
   }
 
-  Future<void> _loadAllUserData(AppUser user) async {
-    setState(() => _loadingUserData = true);
-    try {
-      final results = await Future.wait([
-        _profileRepo.fetchOrCreateProfile(
-          userId: user.id,
-          defaultDisplayName: user.displayName,
-          isGuest: user.isGuest,
-        ),
-        _exerciseRepo.fetchExercises(isGuest: user.isGuest),
-        _workoutRepo.fetchWorkouts(userId: user.id, isGuest: user.isGuest),
-        _workoutRepo.fetchRoutines(userId: user.id, isGuest: user.isGuest),
-        _measurementRepo.fetchMeasurements(
-          userId: user.id,
-          isGuest: user.isGuest,
-        ),
-        _measurementRepo.fetchHealthLogs(
-          userId: user.id,
-          isGuest: user.isGuest,
-        ),
-        _detectionRepo.fetchSavedDetections(
-          userId: user.id,
-          isGuest: user.isGuest,
-        ),
-        _workoutRepo.fetchGoals(userId: user.id, isGuest: user.isGuest),
-      ]);
-
-      if (!mounted) return;
-      setState(() {
-        _profile = results[0] as UserProfile;
-        _exercises = results[1] as List<Exercise>;
-        _workouts = results[2] as List<WorkoutRecord>;
-        _routines = results[3] as List<WorkoutRoutine>;
-        _measurements = results[4] as List<BodyMeasurement>;
-        _healthLogs = results[5] as List<HealthLogRecord>;
-        _detections = results[6] as List<CameraDetectionRecord>;
-        _goals = results[7] as List<UserGoalRecord>;
-      });
-    } catch (e) {
-      widget.diagnostics.logEvent('Initial data load fallback: ${e.runtimeType}');
-    } finally {
-      if (mounted) {
-        setState(() => _loadingUserData = false);
-      }
-    }
-  }
-
-  void _handleUpgradeGuest() {
-    setState(() => _openRegisterOnAuth = true);
-    widget.authService.signOut();
+  Future<void> _handleUpgradeGuest() async {
+    await _authFlowController.beginGuestUpgradeToCloud();
   }
 
   @override
   Widget build(BuildContext context) {
+    // Notice: cameraService and notifications are intentionally excluded from
+    // this root Listenable.merge so high-frequency inference/timer events never
+    // rebuild MaterialApp.
     return ListenableBuilder(
-      listenable: Listenable.merge([widget.prefs, widget.authService]),
+      listenable: Listenable.merge([
+        widget.prefs,
+        _authFlowController,
+        _userDataController,
+      ]),
       builder: (context, _) {
         final glass = widget.prefs.glassThemeEnabled;
+        final user = _authFlowController.currentUser;
+        final iosPreview = (widget.prefs.developerModeEnabled || user.isAdmin) &&
+            widget.prefs.iosPreviewModeEnabled;
         final textScale = widget.prefs.largeTextEnabled ? 1.22 : 1.0;
+
+        final lightTheme = GlassTheme.buildTheme(
+          brightness: Brightness.light,
+          glassEnabled: glass,
+        );
+        final darkTheme = GlassTheme.buildTheme(
+          brightness: Brightness.dark,
+          glassEnabled: glass,
+        );
 
         return MaterialApp(
           title: 'AI Gym Cloud',
           debugShowCheckedModeBanner: false,
           themeMode: widget.prefs.themeMode,
-          theme: GlassTheme.buildTheme(
-            brightness: Brightness.light,
-            glassEnabled: glass,
-          ),
-          darkTheme: GlassTheme.buildTheme(
-            brightness: Brightness.dark,
-            glassEnabled: glass,
-          ),
+          theme: iosPreview
+              ? lightTheme.copyWith(platform: TargetPlatform.iOS)
+              : lightTheme,
+          darkTheme: iosPreview
+              ? darkTheme.copyWith(platform: TargetPlatform.iOS)
+              : darkTheme,
           locale: Locale(widget.prefs.languageCode),
           builder: (context, child) {
             final media = MediaQuery.of(context);
@@ -214,7 +244,9 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
   }
 
   Widget _buildStageRoot(BuildContext context) {
-    final user = widget.authService.currentUser;
+    final user = _authFlowController.currentUser;
+    final strings = AppStrings.of(context, widget.prefs.languageCode);
+    final isZh = strings.isZh;
 
     // 1. Unauthenticated -> Auth Screen (Sign In / Create Account / Guest)
     if (user.stage == AuthFlowStage.unauthenticated) {
@@ -222,7 +254,7 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
         config: widget.config,
         authService: widget.authService,
         prefs: widget.prefs,
-        initialRegisterMode: _openRegisterOnAuth,
+        initialRegisterMode: _authFlowController.openRegisterOnAuth,
       );
     }
 
@@ -235,16 +267,96 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
     }
 
     // 3. Loading initial profile after verification
-    if (_loadingUserData && _profile == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
+    if (_userDataController.isLoading && _userDataController.data == null) {
+      return Scaffold(
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(height: 12),
+              Text(isZh ? '正在載入您的訓練與健康資料...' : 'Loading your athlete profile...'),
+            ],
+          ),
+        ),
       );
     }
 
+    // 3b. Blocking initial load failure -> User-visible Error Screen + Retry + Offline Fallback
+    if (_userDataController.loadFailure != null &&
+        _userDataController.data == null) {
+      final failure = _userDataController.loadFailure!;
+      return Scaffold(
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 440),
+              child: GlassPanel(
+                glassEnabled: widget.prefs.glassThemeEnabled,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Icon(
+                      Icons.error_outline_rounded,
+                      size: 46,
+                      color: Color(0xFFFF453A),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      strings.tr('loading_failure'),
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      failure.localizedMessage(isZh),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      alignment: WrapAlignment.center,
+                      children: [
+                        FilledButton.icon(
+                          key: const Key('initial_load_retry_button'),
+                          onPressed: () => _userDataController.loadForUser(
+                            user,
+                            forceReload: true,
+                          ),
+                          icon: const Icon(Icons.refresh),
+                          label: Text(strings.tr('retry')),
+                        ),
+                        OutlinedButton.icon(
+                          key: const Key('initial_load_continue_offline_button'),
+                          onPressed: () =>
+                              _userDataController.continueWithOfflineFallback(
+                            user,
+                          ),
+                          icon: const Icon(Icons.offline_bolt_outlined),
+                          label: Text(strings.tr('offline')),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final profile = _userDataController.profile;
+
     // 4. Incomplete profile on verified cloud account -> Onboarding Screen
-    if (!user.isGuest && _profile != null && _profile!.isIncomplete) {
+    if (!user.isGuest && profile != null && profile.isIncomplete) {
       return OnboardingScreen(
-        initialProfile: _profile!,
+        initialProfile: profile,
         prefs: widget.prefs,
         onComplete: (completed) async {
           final saved = await _profileRepo.upsertProfile(
@@ -252,39 +364,60 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
             isGuest: user.isGuest,
           );
           if (!mounted) return;
-          setState(() => _profile = saved);
+          _userDataController.updateProfileInMemory(saved);
         },
       );
     }
 
-    // 5. Main Authenticated or Guest Shell
-    final strings = AppStrings.of(context, widget.prefs.languageCode);
-    final isZh = strings.isZh;
-    final glass = widget.prefs.glassThemeEnabled;
+    // 4b. Offer safe Guest-to-Cloud migration banner/dialog when a verified
+    //     cloud account has local guest records awaiting import.
+    if (user.isFullyAuthenticated &&
+        widget.prefs.pendingGuestMigration &&
+        !_guestMigrationPromptShown) {
+      _guestMigrationPromptShown = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _showGuestMigrationDialog(context, user, strings);
+      });
+    }
 
+    // 5. Main 5-Destination Responsive Shell
+    //    [0] Home (Dashboard + Real-Time Camera Detection Showcase)
+    //    [1] Workout (with Draft Autosave/Recovery)
+    //    [2] Progress (Analytics, Goals, PRs)
+    //    [3] Camera (Real-Time YOLOv8-Pose + Equipment/Cloth Showcase)
+    //    [4] More (Exercise Library, Body & Health, Settings, Diagnostics)
     final pages = <Widget>[
       DashboardScreen(
         user: user,
-        profile: _profile,
-        workouts: _workouts,
-        routines: _routines,
+        profile: profile,
+        workouts: _userDataController.workouts,
+        routines: _userDataController.routines,
+        goals: _userDataController.goals,
+        measurements: _userDataController.measurements,
+        detections: _userDataController.detections,
         prefs: widget.prefs,
-        onNavigateTab: (idx) => setState(() => _selectedIndex = idx),
+        cameraService: widget.cameraService,
+        syncController: _syncController,
+        onNavigateTab: _navigationController.navigateLegacyOrPrimaryIndex,
         onSyncPending: () async {
-          await _workoutRepo.syncPendingQueue(isGuest: user.isGuest);
+          await _syncController.syncPendingOperations(
+            userId: user.id,
+            isGuest: user.isGuest,
+          );
           final refreshed = await _workoutRepo.fetchWorkouts(
             userId: user.id,
             isGuest: user.isGuest,
           );
           if (!mounted) return;
-          setState(() => _workouts = refreshed);
+          _userDataController.replaceWorkoutsInMemory(refreshed);
         },
         onUpgradeGuest: _handleUpgradeGuest,
       ),
       WorkoutScreen(
         userId: user.id,
-        exercises: _exercises,
-        routines: _routines,
+        exercises: _userDataController.exercises,
+        routines: _userDataController.routines,
         prefs: widget.prefs,
         notifications: widget.notifications,
         onSaveWorkout: (workout) async {
@@ -292,12 +425,8 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
             workout: workout,
             isGuest: user.isGuest,
           );
-          final updated = await _workoutRepo.fetchWorkouts(
-            userId: user.id,
-            isGuest: user.isGuest,
-          );
           if (mounted) {
-            setState(() => _workouts = updated);
+            _userDataController.upsertWorkoutInMemory(saved);
           }
           return saved;
         },
@@ -306,12 +435,8 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
             routine: routine,
             isGuest: user.isGuest,
           );
-          final updated = await _workoutRepo.fetchRoutines(
-            userId: user.id,
-            isGuest: user.isGuest,
-          );
           if (mounted) {
-            setState(() => _routines = updated);
+            _userDataController.upsertRoutineInMemory(routine);
           }
         },
         onSaveCardio: (cardio) async {
@@ -321,59 +446,18 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
           );
         },
       ),
-      ExerciseLibraryScreen(
-        exercises: _exercises,
-        prefs: widget.prefs,
-      ),
       ProgressScreen(
         userId: user.id,
-        profile: _profile,
-        workouts: _workouts,
-        exercises: _exercises,
-        measurements: _measurements,
-        goals: _goals,
+        profile: profile,
+        workouts: _userDataController.workouts,
+        exercises: _userDataController.exercises,
+        measurements: _userDataController.measurements,
+        goals: _userDataController.goals,
         prefs: widget.prefs,
         onSaveGoal: (goal) async {
           await _workoutRepo.saveGoal(goal: goal, isGuest: user.isGuest);
-          final updated = await _workoutRepo.fetchGoals(
-            userId: user.id,
-            isGuest: user.isGuest,
-          );
           if (mounted) {
-            setState(() => _goals = updated);
-          }
-        },
-      ),
-      BodyHealthScreen(
-        userId: user.id,
-        profile: _profile,
-        measurements: _measurements,
-        healthLogs: _healthLogs,
-        prefs: widget.prefs,
-        onSaveMeasurement: (m) async {
-          await _measurementRepo.saveMeasurement(
-            measurement: m,
-            isGuest: user.isGuest,
-          );
-          final updated = await _measurementRepo.fetchMeasurements(
-            userId: user.id,
-            isGuest: user.isGuest,
-          );
-          if (mounted) {
-            setState(() => _measurements = updated);
-          }
-        },
-        onSaveHealthLog: (h) async {
-          await _measurementRepo.saveHealthLog(
-            log: h,
-            isGuest: user.isGuest,
-          );
-          final updated = await _measurementRepo.fetchHealthLogs(
-            userId: user.id,
-            isGuest: user.isGuest,
-          );
-          if (mounted) {
-            setState(() => _healthLogs = updated);
+            _userDataController.upsertGoalInMemory(goal);
           }
         },
       ),
@@ -382,119 +466,115 @@ class _AiGymCloudAppState extends State<AiGymCloudApp> {
         isGuest: user.isGuest,
         cameraService: widget.cameraService,
         prefs: widget.prefs,
-        savedDetections: _detections,
+        savedDetections: _userDataController.detections,
         onSaveDetection: (det, filePath) async {
-          await _detectionRepo.saveDetection(
+          final saved = await _detectionRepo.saveDetection(
             detection: det,
             isGuest: user.isGuest,
             localCapturedFilePath: filePath,
           );
-          final updated = await _detectionRepo.fetchSavedDetections(
-            userId: user.id,
-            isGuest: user.isGuest,
-          );
           if (mounted) {
-            setState(() => _detections = updated);
+            _userDataController.upsertDetectionInMemory(saved);
           }
         },
       ),
-      SettingsScreen(
+      MoreScreen(
+        navigationController: _navigationController,
         config: widget.config,
         user: user,
-        profile: _profile,
-        workouts: _workouts,
-        measurements: _measurements,
-        detections: _detections,
+        profile: profile,
+        exercises: _userDataController.exercises,
+        workouts: _userDataController.workouts,
+        measurements: _userDataController.measurements,
+        healthLogs: _userDataController.healthLogs,
+        detections: _userDataController.detections,
         prefs: widget.prefs,
         authService: widget.authService,
         dbService: widget.dbService,
         diagnostics: widget.diagnostics,
+        onSaveMeasurement: (m) async {
+          await _measurementRepo.saveMeasurement(
+            measurement: m,
+            isGuest: user.isGuest,
+          );
+          if (mounted) {
+            _userDataController.upsertMeasurementInMemory(m);
+          }
+        },
+        onSaveHealthLog: (h) async {
+          await _measurementRepo.saveHealthLog(
+            log: h,
+            isGuest: user.isGuest,
+          );
+          if (mounted) {
+            _userDataController.upsertHealthLogInMemory(h);
+          }
+        },
         onUpgradeGuest: _handleUpgradeGuest,
       ),
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(strings.tr('app_title')),
+    return ResponsiveAppShell(
+      user: user,
+      prefs: widget.prefs,
+      navigationController: _navigationController,
+      syncController: _syncController,
+      cameraService: widget.cameraService,
+      notifications: widget.notifications,
+      pages: pages,
+      onSyncNow: () async {
+        await _syncController.syncPendingOperations(
+          userId: user.id,
+          isGuest: user.isGuest,
+        );
+      },
+    );
+  }
+
+  Future<void> _showGuestMigrationDialog(
+    BuildContext context,
+    AppUser verifiedUser,
+    AppStrings strings,
+  ) async {
+    final isZh = strings.isZh;
+    final importNow = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(strings.tr('guest_migration')),
+        content: Text(strings.tr('guest_migration_prompt')),
         actions: [
-          IconButton(
-            tooltip: strings.tr('glass_theme_label'),
-            onPressed: () => widget.prefs.setGlassThemeEnabled(!glass),
-            icon: Icon(glass ? Icons.blur_on : Icons.blur_off),
-          ),
           TextButton(
-            onPressed: () =>
-                widget.prefs.setLanguageCode(isZh ? 'en' : 'zh'),
-            child: Text(isZh ? 'EN' : '繁中'),
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(strings.tr('guest_migration_skip_btn')),
           ),
-        ],
-      ),
-      body: GlassScaffoldBackground(
-        glassEnabled: glass,
-        child: Column(
-          children: [
-            RestTimerBanner(
-              notifications: widget.notifications,
-              isZh: isZh,
-            ),
-            Expanded(
-              child: IndexedStack(
-                index: _selectedIndex,
-                children: pages,
-              ),
-            ),
-          ],
-        ),
-      ),
-      floatingActionButton: widget.prefs.oneHandedControlsEnabled &&
-              _selectedIndex != 1
-          ? FloatingActionButton.extended(
-              onPressed: () => setState(() => _selectedIndex = 1),
-              icon: const Icon(Icons.fitness_center),
-              label: Text(strings.tr('nav_workout')),
-            )
-          : null,
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _selectedIndex,
-        onDestinationSelected: (idx) => setState(() => _selectedIndex = idx),
-        destinations: [
-          NavigationDestination(
-            icon: const Icon(Icons.dashboard_outlined),
-            selectedIcon: const Icon(Icons.dashboard),
-            label: strings.tr('nav_dashboard'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.fitness_center_outlined),
-            selectedIcon: const Icon(Icons.fitness_center),
-            label: strings.tr('nav_workout'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.menu_book_outlined),
-            selectedIcon: const Icon(Icons.menu_book),
-            label: strings.tr('nav_library'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.insights_outlined),
-            selectedIcon: const Icon(Icons.insights),
-            label: strings.tr('nav_progress'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.monitor_heart_outlined),
-            selectedIcon: const Icon(Icons.monitor_heart),
-            label: strings.tr('nav_health'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.center_focus_strong_outlined),
-            selectedIcon: const Icon(Icons.center_focus_strong),
-            label: strings.tr('nav_camera'),
-          ),
-          NavigationDestination(
-            icon: const Icon(Icons.settings_outlined),
-            selectedIcon: const Icon(Icons.settings),
-            label: strings.tr('nav_settings'),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(strings.tr('guest_migration_import_btn')),
           ),
         ],
       ),
     );
+
+    if (importNow == true) {
+      final report = await _syncController.migrateGuestDataToAccount(
+        verifiedUserId: verifiedUser.id,
+      );
+      if (report.isCompleteSuccess) {
+        await widget.prefs.clearGuestDataAfterMigration();
+      }
+      await _userDataController.loadForUser(verifiedUser, forceReload: true);
+      if (!mounted) return;
+      ScaffoldMessenger.of(this.context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isZh
+                ? '已成功匯入 ${report.totalMigrated} 筆訪客紀錄至雲端帳戶！'
+                : 'Migrated ${report.totalMigrated} guest records to your verified account!',
+          ),
+        ),
+      );
+    } else {
+      await widget.prefs.setPendingGuestMigration(false);
+    }
   }
 }

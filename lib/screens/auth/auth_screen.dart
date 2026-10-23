@@ -3,16 +3,11 @@ import 'package:ai_gym_flutter/core/constants/app_config.dart';
 import 'package:ai_gym_flutter/core/localization/app_localizations.dart';
 import 'package:ai_gym_flutter/core/utils/validators.dart';
 import 'package:ai_gym_flutter/core/widgets/glass_widgets.dart';
+import 'package:ai_gym_flutter/core/widgets/svg_vector_icons.dart';
 import 'package:ai_gym_flutter/screens/auth/password_management_sheet.dart';
 import 'package:ai_gym_flutter/services/auth_service.dart';
 import 'package:ai_gym_flutter/services/preference_service.dart';
 
-/// Authentication screen supporting:
-/// - Readable Configuration Error banner when SUPABASE_PUBLISHABLE_KEY is missing
-/// - Sign In (Email + Password -> triggers Step-2 Email OTP)
-/// - Registration (Display Name, Email, Password, Confirm Password, visibility toggle,
-///   password requirements, Create Account button, Link back to Login)
-/// - Forgot Password & Guest Mode entry
 class AuthScreen extends StatefulWidget {
   const AuthScreen({
     super.key,
@@ -67,20 +62,12 @@ class _AuthScreenState extends State<AuthScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     if (_isRegisterMode) {
-      final success = await widget.authService.registerAccount(
+      await widget.authService.registerAccount(
         displayName: _displayNameCtrl.text,
         email: _emailCtrl.text,
         password: _passwordCtrl.text,
         isZh: isZh,
       );
-      if (!mounted) return;
-      if (success) {
-        _passwordCtrl.clear();
-        _confirmPasswordCtrl.clear();
-        setState(() {
-          _isRegisterMode = false;
-        });
-      }
     } else {
       await widget.authService.signInWithPasswordAndRequestOtp(
         email: _emailCtrl.text,
@@ -111,7 +98,14 @@ class _AuthScreenState extends State<AuthScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(strings.tr('app_title')),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const AiGymSvgIcon(AiGymSvgIconName.workoutDumbbell, size: 20),
+            const SizedBox(width: 8),
+            Text(strings.tr('app_title')),
+          ],
+        ),
         actions: [
           IconButton(
             tooltip: strings.tr('glass_theme_label'),
@@ -122,7 +116,7 @@ class _AuthScreenState extends State<AuthScreen> {
             key: const Key('auth_language_toggle'),
             onPressed: () =>
                 widget.prefs.setLanguageCode(isZh ? 'en' : 'zh'),
-            icon: const Icon(Icons.translate),
+            icon: const AiGymSvgIcon(AiGymSvgIconName.domainGlobe, size: 18),
             label: Text(isZh ? 'English' : '繁體中文'),
           ),
         ],
@@ -146,8 +140,8 @@ class _AuthScreenState extends State<AuthScreen> {
                           children: [
                             Row(
                               children: [
-                                Icon(
-                                  Icons.warning_amber_rounded,
+                                AiGymSvgIcon(
+                                  AiGymSvgIconName.warningAlert,
                                   color: Theme.of(context).colorScheme.error,
                                 ),
                                 const SizedBox(width: 8),
@@ -164,16 +158,6 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(strings.tr('config_error_subtitle')),
-                            const SizedBox(height: 6),
-                            SelectableText(
-                              'flutter run --dart-define=SUPABASE_URL=${widget.config.supabaseUrl} '
-                              '--dart-define=SUPABASE_PUBLISHABLE_KEY=YOUR_KEY '
-                              '--dart-define=ADMIN_EMAIL=YOUR_ADMIN_EMAIL',
-                              style: const TextStyle(
-                                fontFamily: 'monospace',
-                                fontSize: 12,
-                              ),
-                            ),
                           ],
                         ),
                       ),
@@ -193,12 +177,18 @@ class _AuthScreenState extends State<AuthScreen> {
                                     ButtonSegment<bool>(
                                       value: false,
                                       label: Text(strings.tr('login_tab')),
-                                      icon: const Icon(Icons.login),
+                                      icon: const AiGymSvgIcon(
+                                        AiGymSvgIconName.shieldOtp,
+                                        size: 16,
+                                      ),
                                     ),
                                     ButtonSegment<bool>(
                                       value: true,
                                       label: Text(strings.tr('register_tab')),
-                                      icon: const Icon(Icons.person_add_alt_1),
+                                      icon: const AiGymSvgIcon(
+                                        AiGymSvgIconName.sparklesAi,
+                                        size: 16,
+                                      ),
                                     ),
                                   ],
                                   selected: {_isRegisterMode},
@@ -253,8 +243,13 @@ class _AuthScreenState extends State<AuthScreen> {
                                   textInputAction: TextInputAction.next,
                                   decoration: InputDecoration(
                                     labelText: strings.tr('email'),
-                                    prefixIcon:
-                                        const Icon(Icons.email_outlined),
+                                    prefixIcon: const Padding(
+                                      padding: EdgeInsets.all(12),
+                                      child: AiGymSvgIcon(
+                                        AiGymSvgIconName.mailCode,
+                                        size: 18,
+                                      ),
+                                    ),
                                   ),
                                   validator: (v) =>
                                       Validators.validateEmail(v, isZh: isZh),
@@ -326,10 +321,9 @@ class _AuthScreenState extends State<AuthScreen> {
                                             strokeWidth: 2,
                                           ),
                                         )
-                                      : Icon(
-                                          _isRegisterMode
-                                              ? Icons.person_add
-                                              : Icons.arrow_forward,
+                                      : const AiGymSvgIcon(
+                                          AiGymSvgIconName.shieldOtp,
+                                          size: 18,
                                         ),
                                   label: Text(
                                     _isRegisterMode
@@ -337,7 +331,27 @@ class _AuthScreenState extends State<AuthScreen> {
                                         : strings.tr('sign_in'),
                                   ),
                                 ),
-                                const SizedBox(height: 10),
+                                const SizedBox(height: 8),
+                                OutlinedButton.icon(
+                                  key: const Key('direct_email_otp_button'),
+                                  onPressed: widget.authService.isLoading
+                                      ? null
+                                      : () => widget.authService
+                                          .requestDirectEmailOtp(
+                                            email: _emailCtrl.text,
+                                            isZh: isZh,
+                                          ),
+                                  icon: const AiGymSvgIcon(
+                                    AiGymSvgIconName.mailCode,
+                                    size: 17,
+                                  ),
+                                  label: Text(
+                                    isZh
+                                        ? '直接發送 6 位數電郵驗證碼 ({{ .Token }})'
+                                        : 'Send 6-Digit Email Verify Code ({{ .Token }})',
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
                                 if (_isRegisterMode)
                                   TextButton(
                                     onPressed: () => _toggleAuthMode(false),
@@ -357,7 +371,10 @@ class _AuthScreenState extends State<AuthScreen> {
                                 OutlinedButton.icon(
                                   key: const Key('enter_guest_mode_button'),
                                   onPressed: widget.authService.enterGuestMode,
-                                  icon: const Icon(Icons.offline_bolt_outlined),
+                                  icon: const AiGymSvgIcon(
+                                    AiGymSvgIconName.cameraCoach,
+                                    size: 18,
+                                  ),
                                   label: Text(strings.tr('continue_guest')),
                                 ),
                               ],

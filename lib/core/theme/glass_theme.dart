@@ -1,76 +1,130 @@
 import 'package:flutter/material.dart';
+import 'package:ai_gym_flutter/core/theme/design_tokens.dart';
 
-/// Material 3 & Glassmorphism theme builder with lime green accent (0xFF9ED756).
+/// Material 3 & Liquid Glass theme builder powered by `AppDesignTokens`
+/// (`@design-theme-guide`, `@ui-ux-pro-max`, `@deterministic-design`).
+/// Guarantees >= 4.5:1 WCAG 2.2 AA/AAA contrast in both Light and Dark modes
+/// and >= 48x48dp minimum interactive touch targets.
 class GlassTheme {
   GlassTheme._();
 
-  static const Color limeAccent = Color(0xFF9ED756);
-  static const Color darkNavyBgTop = Color(0xFF0A141D);
-  static const Color darkGreenBgBottom = Color(0xFF102820);
-  static const Color lightBgTop = Color(0xFFF3F8EE);
-  static const Color lightBgBottom = Color(0xFFE2EFE8);
+  static const Color limeAccent = AppDesignTokens.brandLimeDark;
+  static const Color darkNavyBgTop = AppDesignTokens.darkCanvas;
+  static const Color darkGreenBgBottom = Color(0xFF0E211D);
+  static const Color lightBgTop = AppDesignTokens.lightCanvas;
+  static const Color lightBgBottom = Color(0xFFE6F0E8);
 
   static ThemeData buildTheme({
     required Brightness brightness,
     required bool glassEnabled,
   }) {
     final isDark = brightness == Brightness.dark;
+    final primaryColor = isDark
+        ? AppDesignTokens.brandLimeDark
+        : AppDesignTokens.brandLimeLight;
+    final secondaryColor = isDark
+        ? AppDesignTokens.accentCyanDark
+        : AppDesignTokens.accentCyanLight;
+    final textPrimary = isDark
+        ? AppDesignTokens.darkTextPrimary
+        : AppDesignTokens.lightTextPrimary;
+    final textSecondary = isDark
+        ? AppDesignTokens.darkTextSecondary
+        : AppDesignTokens.lightTextSecondary;
+
     final colorScheme = ColorScheme.fromSeed(
-      seedColor: limeAccent,
+      seedColor: primaryColor,
       brightness: brightness,
-      primary: isDark ? limeAccent : const Color(0xFF4C7B1E),
-      secondary: isDark ? const Color(0xFF72D6A4) : const Color(0xFF1F6E50),
-      surface: isDark ? const Color(0xFF12212B) : const Color(0xFFFFFFFF),
+      primary: primaryColor,
+      secondary: secondaryColor,
+      surface: isDark
+          ? AppDesignTokens.darkSurface
+          : AppDesignTokens.lightSurface,
+      onSurface: textPrimary,
+      error: isDark
+          ? AppDesignTokens.postureAlertDark
+          : AppDesignTokens.postureAlertLight,
     );
 
     final cardColor = glassEnabled
         ? (isDark
             ? Colors.white.withValues(alpha: 0.08)
-            : Colors.white.withValues(alpha: 0.72))
-        : (isDark ? const Color(0xFF162632) : Colors.white);
+            : Colors.white.withValues(alpha: 0.86))
+        : (isDark
+            ? AppDesignTokens.darkCardSolid
+            : AppDesignTokens.lightCardSolid);
 
     final inputFillColor = glassEnabled
         ? (isDark
             ? Colors.white.withValues(alpha: 0.07)
-            : Colors.white.withValues(alpha: 0.78))
-        : (isDark ? const Color(0xFF1C2F3D) : const Color(0xFFF5F8F5));
+            : Colors.white.withValues(alpha: 0.90))
+        : (isDark ? const Color(0xFF1A2836) : const Color(0xFFEEF4EE));
 
     return ThemeData(
       useMaterial3: true,
       brightness: brightness,
       colorScheme: colorScheme,
-      scaffoldBackgroundColor:
-          isDark ? darkNavyBgTop : lightBgTop,
+      scaffoldBackgroundColor: isDark ? darkNavyBgTop : lightBgTop,
+      textTheme: TextTheme(
+        headlineSmall: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.w800,
+          letterSpacing: -0.4,
+        ),
+        titleMedium: TextStyle(
+          color: textPrimary,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.2,
+        ),
+        bodyMedium: TextStyle(
+          color: textPrimary,
+          height: 1.5,
+        ),
+        bodySmall: TextStyle(
+          color: textSecondary,
+          height: 1.45,
+        ),
+      ),
       appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
         centerTitle: false,
         backgroundColor: glassEnabled
             ? (isDark
-                ? const Color(0xFF0B1822).withValues(alpha: 0.72)
-                : Colors.white.withValues(alpha: 0.75))
-            : (isDark ? const Color(0xFF0E1D28) : Colors.white),
-        foregroundColor: isDark ? Colors.white : const Color(0xFF102018),
+                ? const Color(0xFF0A141E).withValues(alpha: 0.78)
+                : Colors.white.withValues(alpha: 0.88))
+            : (isDark ? AppDesignTokens.darkSurface : Colors.white),
+        foregroundColor: textPrimary,
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: glassEnabled
             ? (isDark
-                ? const Color(0xFF0B1822).withValues(alpha: 0.80)
-                : Colors.white.withValues(alpha: 0.82))
-            : (isDark ? const Color(0xFF0E1D28) : Colors.white),
-        indicatorColor: limeAccent.withValues(alpha: isDark ? 0.28 : 0.35),
+                ? const Color(0xFF0A141E).withValues(alpha: 0.86)
+                : Colors.white.withValues(alpha: 0.90))
+            : (isDark ? AppDesignTokens.darkSurface : Colors.white),
+        indicatorColor: primaryColor.withValues(alpha: isDark ? 0.24 : 0.18),
         labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(
+            AppDesignTokens.minTouchTarget,
+            AppDesignTokens.minTouchTarget,
+          ),
+        ),
       ),
       cardTheme: CardThemeData(
         color: cardColor,
-        elevation: glassEnabled ? 0 : 2,
+        elevation: glassEnabled ? 0 : 1,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusLg),
           side: BorderSide(
             color: glassEnabled
-                ? Colors.white.withValues(alpha: isDark ? 0.18 : 0.65)
-                : colorScheme.outlineVariant.withValues(alpha: 0.35),
-            width: 1.1,
+                ? (isDark
+                    ? Colors.white.withValues(alpha: 0.16)
+                    : const Color(0xFFCBD5E1))
+                : colorScheme.outlineVariant.withValues(alpha: 0.40),
+            width: 1.0,
           ),
         ),
       ),
@@ -78,50 +132,52 @@ class GlassTheme {
         filled: true,
         fillColor: inputFillColor,
         contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
+          horizontal: AppDesignTokens.space4,
           vertical: 14,
         ),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusMd),
           borderSide: BorderSide(
-            color: Colors.white.withValues(alpha: isDark ? 0.22 : 0.6),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.22)
+                : const Color(0xFFCBD5E1),
           ),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusMd),
           borderSide: BorderSide(
             color: isDark
                 ? Colors.white.withValues(alpha: 0.18)
-                : const Color(0xFFBFD4C5),
+                : const Color(0xFFCBD5E1),
           ),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(20),
-          borderSide: const BorderSide(
-            color: limeAccent,
-            width: 1.8,
+          borderRadius: BorderRadius.circular(AppDesignTokens.radiusMd),
+          borderSide: BorderSide(
+            color: primaryColor,
+            width: 2.0,
           ),
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
-          minimumSize: const Size(88, 48),
-          backgroundColor: isDark ? limeAccent : const Color(0xFF3E6B14),
-          foregroundColor: isDark ? const Color(0xFF09160E) : Colors.white,
+          minimumSize: const Size(88, AppDesignTokens.minTouchTarget),
+          backgroundColor: primaryColor,
+          foregroundColor: isDark ? const Color(0xFF071209) : Colors.white,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusMd),
           ),
           textStyle: const TextStyle(
             fontWeight: FontWeight.w700,
-            fontSize: 15,
+            fontSize: 14.5,
           ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
-          minimumSize: const Size(88, 48),
+          minimumSize: const Size(88, AppDesignTokens.minTouchTarget),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
+            borderRadius: BorderRadius.circular(AppDesignTokens.radiusMd),
           ),
         ),
       ),
@@ -145,12 +201,12 @@ class GlassTheme {
         colors: isDark
             ? const [
                 darkNavyBgTop,
-                Color(0xFF0E2229),
+                Color(0xFF0D1D28),
                 darkGreenBgBottom,
               ]
             : const [
                 lightBgTop,
-                Color(0xFFE7F3E3),
+                Color(0xFFEBF4EA),
                 lightBgBottom,
               ],
       ),

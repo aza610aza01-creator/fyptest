@@ -344,15 +344,11 @@ class _BodyHealthScreenState extends State<BodyHealthScreen> {
               const SizedBox(height: 10),
               Text(
                 isZh
-                    ? '心率區間估算（依年齡 $age 歲，最大心率約 $maxHr bpm｜熱量與心率僅供一般運動估算，非醫療指標）：
-'
-                        '• Zone 2 有氧燃脂區：${(maxHr * 0.6).round()}-${(maxHr * 0.7).round()} bpm
-'
+                    ? '心率區間估算（依年齡 $age 歲，最大心率約 $maxHr bpm｜熱量與心率僅供一般運動估算，非醫療指標）：\n'
+                        '• Zone 2 有氧燃脂區：${(maxHr * 0.6).round()}-${(maxHr * 0.7).round()} bpm\n'
                         '• Zone 4 無氧閾值區：${(maxHr * 0.8).round()}-${(maxHr * 0.9).round()} bpm'
-                    : 'Heart-Rate Zones (Est. Max HR $maxHr bpm for age $age | Calorie & HR values are general estimates with physiological limitations):
-'
-                        '• Zone 2 Aerobic Endurance: ${(maxHr * 0.6).round()}-${(maxHr * 0.7).round()} bpm
-'
+                    : 'Heart-Rate Zones (Est. Max HR $maxHr bpm for age $age | Calorie & HR values are general estimates with physiological limitations):\n'
+                        '• Zone 2 Aerobic Endurance: ${(maxHr * 0.6).round()}-${(maxHr * 0.7).round()} bpm\n'
                         '• Zone 4 Anaerobic Threshold: ${(maxHr * 0.8).round()}-${(maxHr * 0.9).round()} bpm',
                 style: Theme.of(context).textTheme.bodySmall,
               ),

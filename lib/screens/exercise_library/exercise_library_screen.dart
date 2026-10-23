@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:ai_gym_flutter/core/localization/app_localizations.dart';
 import 'package:ai_gym_flutter/core/widgets/glass_widgets.dart';
+import 'package:ai_gym_flutter/core/widgets/ui_state_views.dart';
 import 'package:ai_gym_flutter/models/exercise.dart';
 import 'package:ai_gym_flutter/services/preference_service.dart';
 
@@ -110,10 +111,21 @@ class _ExerciseLibraryScreenState extends State<ExerciseLibraryScreen> {
           ),
         ),
         if (filtered.isEmpty)
-          EmptyStateCard(
-            icon: Icons.search_off,
-            title: isZh ? '找不到符合條件的訓練動作' : 'No Matching Exercises',
-            subtitle: isZh ? '請嘗試清除篩選條件或更換關鍵字。' : 'Try clearing your search filters.',
+          GlassPanel(
+            glassEnabled: glass,
+            child: NoResultsStateCard(
+              queryOrFilterSummary: query.isNotEmpty
+                  ? query
+                  : '$_selectedMuscle / $_selectedEquipment',
+              isZh: isZh,
+              onClearFilters: () {
+                setState(() {
+                  _searchCtrl.clear();
+                  _selectedMuscle = 'All';
+                  _selectedEquipment = 'All';
+                });
+              },
+            ),
           )
         else
           ...filtered.map(

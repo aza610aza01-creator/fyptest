@@ -3,12 +3,13 @@ import 'package:ai_gym_flutter/core/constants/app_config.dart';
 import 'package:ai_gym_flutter/core/localization/app_localizations.dart';
 import 'package:ai_gym_flutter/core/utils/validators.dart';
 import 'package:ai_gym_flutter/core/widgets/glass_widgets.dart';
+import 'package:ai_gym_flutter/core/widgets/svg_vector_icons.dart';
 import 'package:ai_gym_flutter/services/auth_service.dart';
 import 'package:ai_gym_flutter/services/preference_service.dart';
 
-/// Step-2 Login Screen: Six-digit Email OTP verification (`verifyOTP` with `OtpType.email`).
-/// Prevents access to protected screens until verified.
-/// Never displays the OTP code inside the app, console, or popups.
+/// Step-2 Login & Registration Verification Screen:
+/// Six-digit Email OTP verification (`verifyOTP` with `OtpType.email` / `OtpType.signup`)
+/// + Custom SMTP Build Domain Diagnostics Drawer.
 class OtpVerificationScreen extends StatefulWidget {
   const OtpVerificationScreen({
     super.key,
@@ -41,6 +42,80 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
     );
   }
 
+  void _openCustomSmtpDiagnosticsSheet(BuildContext context, bool isZh) {
+    final smtp = widget.authService.smtpConfig;
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
+          child: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
+                  children: [
+                    const AiGymSvgIcon(
+                      AiGymSvgIconName.smtpServer,
+                      size: 24,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        isZh
+                            ? 'Supabase 自訂域名 SMTP 與 6 位數驗證碼設定'
+                            : 'Supabase Custom Domain SMTP & 6-Digit Verify Code',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      icon: const Icon(Icons.close),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  isZh
+                      ? '專案已內建 supabase/config.toml 與 .\supabase\configure_custom_smtp_and_otp.ps1 自動化腳本，將確認信與登入信模板改為發送 6 位數 {{ .Token }} 驗證碼：'
+                      : 'Included in supabase/config.toml and .\\supabase\\configure_custom_smtp_and_otp.ps1 to enable Custom SMTP for your build domain and output 6-digit {{ .Token }} codes:',
+                  style: const TextStyle(fontSize: 12.5),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.black26,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: SelectableText(
+                    'Build Domain : ${smtp.buildDomain}\n'
+                    'SMTP Server  : ${smtp.smtpHost}:${smtp.smtpPort}\n'
+                    'Sender Email : ${smtp.senderEmail}\n'
+                    'OTP Template : {{ .Token }} (${smtp.otpLength} digits, ${smtp.otpExpirySeconds}s expiry)\n'
+                    'CLI Script   : .\\supabase\\configure_custom_smtp_and_otp.ps1',
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final strings = AppStrings.of(context, widget.prefs.languageCode);
@@ -50,11 +125,16 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
       appBar: AppBar(
         title: Text(strings.tr('otp_title')),
         actions: [
+          IconButton(
+            tooltip: 'Custom SMTP & 6-Digit Verify Code Info',
+            onPressed: () => _openCustomSmtpDiagnosticsSheet(context, isZh),
+            icon: const AiGymSvgIcon(AiGymSvgIconName.smtpServer, size: 20),
+          ),
           TextButton.icon(
             onPressed: () {
               widget.prefs.setLanguageCode(isZh ? 'en' : 'zh');
             },
-            icon: const Icon(Icons.language),
+            icon: const AiGymSvgIcon(AiGymSvgIconName.domainGlobe, size: 18),
             label: Text(isZh ? 'EN' : '繁中'),
           ),
         ],
@@ -83,9 +163,14 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const Icon(
-                              Icons.mark_email_read_outlined,
-                              size: 48,
+                            Center(
+                              child: AiGymSvgOtpHeroBadge(
+                                primaryColor:
+                                    Theme.of(context).colorScheme.primary,
+                                secondaryColor:
+                                    Theme.of(context).colorScheme.secondary,
+                                size: 72,
+                              ),
                             ),
                             const SizedBox(height: 12),
                             Text(
@@ -98,8 +183,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                             ),
                             const SizedBox(height: 8),
                             Text(
-                              '${strings.tr('otp_subtitle')}
-Email: $maskedEmail',
+                              '${strings.tr('otp_subtitle')}\nEmail: $maskedEmail',
                               textAlign: TextAlign.center,
                             ),
                             const SizedBox(height: 18),
@@ -137,7 +221,13 @@ Email: $maskedEmail',
                               decoration: InputDecoration(
                                 labelText: strings.tr('otp_input_label'),
                                 hintText: '000000',
-                                prefixIcon: const Icon(Icons.pin_outlined),
+                                prefixIcon: const Padding(
+                                  padding: EdgeInsets.all(12),
+                                  child: AiGymSvgIcon(
+                                    AiGymSvgIconName.keyToken,
+                                    size: 18,
+                                  ),
+                                ),
                               ),
                               validator: (v) =>
                                   Validators.validateOtpCode(v, isZh: isZh),
@@ -156,7 +246,10 @@ Email: $maskedEmail',
                                         strokeWidth: 2,
                                       ),
                                     )
-                                  : const Icon(Icons.verified_user_outlined),
+                                  : const AiGymSvgIcon(
+                                      AiGymSvgIconName.checkVerified,
+                                      size: 18,
+                                    ),
                               label: Text(strings.tr('verify_otp')),
                             ),
                             const SizedBox(height: 10),
@@ -166,7 +259,10 @@ Email: $maskedEmail',
                                         isZh: isZh,
                                       )
                                   : null,
-                              icon: const Icon(Icons.refresh),
+                              icon: const AiGymSvgIcon(
+                                AiGymSvgIconName.mailCode,
+                                size: 17,
+                              ),
                               label: Text(
                                 cooldown > 0
                                     ? '${strings.tr('resend_wait')} ${cooldown}s'
@@ -178,9 +274,18 @@ Email: $maskedEmail',
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 TextButton.icon(
-                                  onPressed: widget.authService.cancelOtpLogin,
-                                  icon: const Icon(Icons.alternate_email),
-                                  label: Text(strings.tr('change_email')),
+                                  onPressed: () =>
+                                      _openCustomSmtpDiagnosticsSheet(
+                                    context,
+                                    isZh,
+                                  ),
+                                  icon: const AiGymSvgIcon(
+                                    AiGymSvgIconName.smtpServer,
+                                    size: 16,
+                                  ),
+                                  label: Text(
+                                    isZh ? '自訂 SMTP 設定' : 'Custom SMTP Info',
+                                  ),
                                 ),
                                 TextButton.icon(
                                   onPressed: widget.authService.cancelOtpLogin,

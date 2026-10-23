@@ -30,7 +30,7 @@ Push-Location $root
 try {
     # 2. Run flutter create for Android platform files
     Write-Host "[2/10] Generating Android platform files with flutter create ..." -ForegroundColor Yellow
-    flutter create . --platforms=android --project-name=ai_gym_flutter
+    flutter create . --platforms=android,web,windows --project-name=ai_gym_flutter
     if ($LASTEXITCODE -ne 0) {
         throw "flutter create failed with exit code $LASTEXITCODE"
     }

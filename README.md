@@ -268,3 +268,18 @@ flutter build apk --debug `
 1. Launch the app with `--dart-define=ADMIN_EMAIL=your_verified_email@example.com`.
 2. Log in with that exact Email, password, and verified 6-digit Email OTP (Guest accounts can never access Admin Tools).
 3. Open **Settings** -> **Admin Developer Tools** to inspect FPS/UI build/raster estimates, build mode, Supabase Auth & DB read/write diagnostics, masked user/session IDs, Android hardware info (`device_info_plus`), camera/detector/sync status, and scrubbable runtime logs.
+
+## Supabase Project & YOLOv8 Detection Configuration
+
+- **Supabase Project**: `aza610aza01-creator's Project`
+- **Supabase Organization**: `aza610aza01-creator's Org | Supabase`
+- **Supabase URL**: `https://eprmvrtcpuydxhtzwfep.supabase.co`
+- **Supabase Publishable Key**: `sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP` (pre-configured as fallback in `AppConfig` and overridable via `--dart-define`)
+- **AI Vision Engine**: Dual **YOLOv8n-Gym (Non-Maximum Suppression + IoU Filtering + Gym Equipment Classifier)** + **Google ML Kit Object Detection**
+
+```bash
+flutter run \
+  --dart-define=SUPABASE_URL=https://eprmvrtcpuydxhtzwfep.supabase.co \
+  --dart-define=SUPABASE_PUBLISHABLE_KEY=sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP \
+  --dart-define=ADMIN_EMAIL=admin@aigymcloud.com
+```

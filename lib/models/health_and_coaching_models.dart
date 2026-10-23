@@ -162,6 +162,19 @@ class UserGoalRecord {
   final DateTime? targetDate;
   final String status;
 
+  /// Human-readable goal title (backward-compatible getter used by DashboardScreen).
+  String get title => goalType;
+
+  /// Extracted unit suffix if present in `goalType` (e.g. `kg` from `Weekly Volume (kg)`).
+  String get unit {
+    final openIdx = goalType.indexOf('(');
+    final closeIdx = goalType.indexOf(')');
+    if (openIdx != -1 && closeIdx > openIdx + 1) {
+      return goalType.substring(openIdx + 1, closeIdx).trim();
+    }
+    return '';
+  }
+
   double get progressRatio {
     if (targetValue <= 0) return 0;
     return (currentValue / targetValue).clamp(0.0, 1.0);
