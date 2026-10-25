@@ -1,0 +1,60 @@
+# ==============================================================================
+# AI Gym Cloud v5.2 — Supabase Auth, Custom Domain SMTP & 6-Digit OTP Config
+# Project ID: your-project-ref (https://your-project-ref.supabase.co)
+# ==============================================================================
+project_id = "your-project-ref"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "storage", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[auth]
+enabled = true
+site_url = "https://app.aigymcloud.build"
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://localhost:8080",
+  "http://localhost:5000",
+  "https://app.aigymcloud.build/**"
+]
+jwt_expiry = 3600
+enable_refresh_token_rotation = true
+refresh_token_reuse_interval = 10
+enable_signup = true
+
+[auth.email]
+# Enable email signup and 6-digit OTP verification codes ({{ .Token }})
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = false
+max_frequency = "1s"
+# 6-digit numeric OTP verification code valid for 1 hour (3600 seconds)
+otp_length = 6
+otp_exp = 3600
+
+# Custom SMTP Server for Build Domain (bypasses Supabase default 2-4 emails/hr limit)
+[auth.email.smtp]
+enabled = true
+host = "smtp.resend.com"
+port = 587
+user = "resend"
+pass = "env(SUPABASE_SMTP_PASS)"
+admin_email = "auth@aigymcloud.build"
+sender_name = "AI Gym Cloud Security"
+
+# Custom HTML Email Templates with 6-Digit {{ .Token }} Verification Code
+[auth.email.template.confirmation]
+subject = "Your AI Gym Cloud 6-Digit Verification Code: {{ .Token }}"
+content_path = "./supabase/templates/confirm_signup_code.html"
+
+[auth.email.template.magic_link]
+subject = "AI Gym Cloud Login Verification Code: {{ .Token }}"
+content_path = "./supabase/templates/otp_verify_code.html"
+
+[auth.email.template.recovery]
+subject = "AI Gym Cloud Password Reset Code: {{ .Token }}"
+content_path = "./supabase/templates/recovery_code.html"

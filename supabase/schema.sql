@@ -1,9 +1,9 @@
 -- =============================================================================
 -- AI GYM CLOUD - COMPLETE SUPABASE POSTGRESQL SCHEMA, TRIGGERS, AND RLS
--- Project ID: eprmvrtcpuydxhtzwfep
+-- Project ID: your-project-ref
 -- =============================================================================
 -- Run this script inside the Supabase SQL Editor.
--- Never expose the service_role key or database password in the Flutter app.
+-- Never expose the server_admin_role key or database password in the Flutter app.
 
 create extension if not exists "pgcrypto";
 
