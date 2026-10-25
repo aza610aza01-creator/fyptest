@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
@@ -7,6 +6,9 @@ import 'package:flutter/widgets.dart';
 /// backgrounding, lifecycle pauses, or app restarts recover remaining seconds
 /// accurately without duplicate timers or duplicate notifications.
 class NotificationService extends ChangeNotifier {
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
   Timer? _countdownTimer;
   DateTime? _targetEndUtc;
   int _remainingSeconds = 0;
@@ -168,7 +170,14 @@ class NotificationService extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _isDisposed = true;
     _countdownTimer?.cancel();
     super.dispose();
   }

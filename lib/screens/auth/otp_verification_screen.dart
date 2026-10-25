@@ -82,8 +82,8 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                 const SizedBox(height: 8),
                 Text(
                   isZh
-                      ? '專案已內建 supabase/config.toml 與 .\supabase\configure_custom_smtp_and_otp.ps1 自動化腳本，將確認信與登入信模板改為發送 6 位數 {{ .Token }} 驗證碼：'
-                      : 'Included in supabase/config.toml and .\\supabase\\configure_custom_smtp_and_otp.ps1 to enable Custom SMTP for your build domain and output 6-digit {{ .Token }} codes:',
+                      ? '專案已內建 supabase/config.toml 與 supabase/configure_custom_smtp_and_otp.ps1 自動化腳本，將確認信與登入信模板改為發送 6 位數 {{ .Token }} 驗證碼：'
+                      : 'Included in supabase/config.toml and supabase/configure_custom_smtp_and_otp.ps1 to enable Custom SMTP for your build domain and output 6-digit {{ .Token }} codes:',
                   style: const TextStyle(fontSize: 12.5),
                 ),
                 const SizedBox(height: 12),
@@ -100,7 +100,7 @@ class _OtpVerificationScreenState extends State<OtpVerificationScreen> {
                     'SMTP Server  : ${smtp.smtpHost}:${smtp.smtpPort}\n'
                     'Sender Email : ${smtp.senderEmail}\n'
                     'OTP Template : {{ .Token }} (${smtp.otpLength} digits, ${smtp.otpExpirySeconds}s expiry)\n'
-                    'CLI Script   : .\\supabase\\configure_custom_smtp_and_otp.ps1',
+                    'CLI Script   : supabase/configure_custom_smtp_and_otp.ps1',
                     style: const TextStyle(
                       fontFamily: 'monospace',
                       fontSize: 12,

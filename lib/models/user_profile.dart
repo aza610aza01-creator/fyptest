@@ -3,6 +3,7 @@ class UserProfile {
   const UserProfile({
     required this.id,
     required this.displayName,
+    this.email = 'athlete@aigymcloud.build',
     this.age,
     this.heightCm,
     this.weightKg,
@@ -22,6 +23,8 @@ class UserProfile {
 
   final String id;
   final String displayName;
+  final String email;
+  String get name => displayName;
   final int? age;
   final double? heightCm;
   final double? weightKg;
@@ -56,6 +59,7 @@ class UserProfile {
     return UserProfile(
       id: (json['id'] ?? '').toString(),
       displayName: (json['display_name'] ?? '').toString(),
+      email: (json['email'] ?? 'athlete@aigymcloud.build').toString(),
       age: json['age'] is num ? (json['age'] as num).toInt() : null,
       heightCm:
           json['height_cm'] is num ? (json['height_cm'] as num).toDouble() : null,
@@ -103,6 +107,8 @@ class UserProfile {
   UserProfile copyWith({
     String? id,
     String? displayName,
+    String? name,
+    String? email,
     int? age,
     double? heightCm,
     double? weightKg,
@@ -119,7 +125,8 @@ class UserProfile {
   }) {
     return UserProfile(
       id: id ?? this.id,
-      displayName: displayName ?? this.displayName,
+      displayName: displayName ?? name ?? this.displayName,
+      email: email ?? this.email,
       age: age ?? this.age,
       heightCm: heightCm ?? this.heightCm,
       weightKg: weightKg ?? this.weightKg,

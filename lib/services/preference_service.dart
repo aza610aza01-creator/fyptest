@@ -95,12 +95,16 @@ class WorkoutDraftData {
 /// Persists non-sensitive local preferences, user-partitioned offline cache,
 /// recoverable workout drafts, and offline pending queues using SharedPreferences.
 class PreferenceService extends ChangeNotifier {
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
   PreferenceService(this._prefs);
 
   final SharedPreferences _prefs;
 
   static const String keyLanguage = 'pref_language_code';
   static const String keyGlassTheme = 'pref_glass_theme';
+  static const String keyDesignParadigm = 'pref_design_paradigm';
   static const String keyIosPreviewMode = 'pref_ios_preview_mode';
   static const String keyDeveloperMode = 'pref_developer_mode';
   static const String keyThemeMode = 'pref_theme_mode';
@@ -162,6 +166,29 @@ class PreferenceService extends ChangeNotifier {
   Future<void> setLanguageCode(String code) async {
     final normalized = code.toLowerCase().startsWith('zh') ? 'zh' : 'en';
     await _prefs.setString(keyLanguage, normalized);
+    notifyListeners();
+  }
+
+  String get designParadigm => _prefs.getString(keyDesignParadigm) ?? 'glassmorphism';
+
+  Future<void> setDesignParadigm(String paradigm) async {
+    const allowed = <String>{
+      'flat',
+      'glassmorphism',
+      'neomorphism',
+      'skeuomorphism',
+      'dark',
+      'bento',
+    };
+    final normalized = allowed.contains(paradigm) ? paradigm : 'glassmorphism';
+    await _prefs.setString(keyDesignParadigm, normalized);
+    if (normalized == 'glassmorphism') {
+      await _prefs.setBool(keyGlassTheme, true);
+    } else if (normalized == 'flat') {
+      await _prefs.setBool(keyGlassTheme, false);
+    } else if (normalized == 'dark') {
+      await _prefs.setString(keyThemeMode, 'dark');
+    }
     notifyListeners();
   }
 
@@ -558,6 +585,7 @@ class PreferenceService extends ChangeNotifier {
     return {
       'language': languageCode,
       'glassTheme': glassThemeEnabled,
+      'designParadigm': designParadigm,
       'developerMode': developerModeEnabled,
       'iosPreviewMode': iosPreviewModeEnabled,
       'themeMode': themeModeName,
@@ -575,5 +603,17 @@ class PreferenceService extends ChangeNotifier {
       'hasActiveDraft': getWorkoutDraft() != null,
       'lastSyncState': lastSyncState,
     };
+  }
+
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 }

@@ -60,6 +60,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     int totalSets = 0;
     int totalReps = 0;
     double bestVolumeKg = 0;
+    double weeklyVolumeKg = 0;
+    final sevenDaysAgo = DateTime.now().toUtc().subtract(const Duration(days: 7));
     int bestDurationMin = 0;
     double best1RmKg = 0;
     final muscleSetMap = <String, int>{};
@@ -67,6 +69,9 @@ class _ProgressScreenState extends State<ProgressScreen> {
 
     for (final w in widget.workouts) {
       if (w.totalVolumeKg > bestVolumeKg) bestVolumeKg = w.totalVolumeKg;
+      if (w.startedAt.toUtc().isAfter(sevenDaysAgo)) {
+        weeklyVolumeKg += w.totalVolumeKg;
+      }
       if (w.durationMinutes > bestDurationMin) {
         bestDurationMin = w.durationMinutes;
       }
@@ -143,7 +148,12 @@ class _ProgressScreenState extends State<ProgressScreen> {
                         '${FitnessCalculators.formatWeight(best1RmKg, isImperial: isImperial).toStringAsFixed(1)} $weightUnit',
                   ),
                   _StatChip(
-                    label: isZh ? '最高單次容量' : 'Best Session Volume',
+                    label: strings.tr('weekly_volume'),
+                    value:
+                        '${FitnessCalculators.formatWeight(weeklyVolumeKg, isImperial: isImperial).toStringAsFixed(0)} $weightUnit',
+                  ),
+                  _StatChip(
+                    label: isZh ? '最高單次容量 (PR)' : 'Best Session Volume (PR)',
                     value:
                         '${FitnessCalculators.formatWeight(bestVolumeKg, isImperial: isImperial).toStringAsFixed(0)} $weightUnit',
                   ),
@@ -219,7 +229,7 @@ class _ProgressScreenState extends State<ProgressScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SectionHeader(
-                title: isZh ? '近14天訓練一致性日曆與徽章' : '14-Day Consistency Calendar & Badges',
+                title: isZh ? '近30天訓練一致性日曆與徽章' : '30-Day Adherence View & Consistency Badges',
                 icon: Icons.calendar_today_outlined,
               ),
               _buildConsistencyCalendar(context),
@@ -412,8 +422,8 @@ class _ProgressScreenState extends State<ProgressScreen> {
     return Wrap(
       spacing: 6,
       runSpacing: 6,
-      children: List.generate(14, (index) {
-        final day = today.subtract(Duration(days: 13 - index));
+      children: List.generate(30, (index) {
+        final day = today.subtract(Duration(days: 29 - index));
         final key = day.toIso8601String().substring(0, 10);
         final trained = activeDates.contains(key);
         return Container(

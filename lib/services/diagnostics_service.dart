@@ -5,6 +5,9 @@ import 'package:flutter/scheduler.dart';
 /// Collects frame timings (estimated FPS, build & raster ms), Android hardware
 /// diagnostics via device_info_plus, and scrubbed runtime logs for Admin Tools.
 class DiagnosticsService extends ChangeNotifier {
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
   DiagnosticsService() {
     _attachFrameTimingListener();
   }
@@ -134,5 +137,17 @@ class DiagnosticsService extends ChangeNotifier {
       '[JWT_REDACTED]',
     );
     return output;
+  }
+
+  @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _isDisposed = true;
+    super.dispose();
   }
 }

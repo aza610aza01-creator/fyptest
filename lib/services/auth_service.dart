@@ -34,6 +34,9 @@ class CustomSmtpDomainConfig {
 /// - Direct passwordless 6-digit Email OTP dispatch (`requestDirectEmailOtp`)
 /// - Custom SMTP build domain diagnostics & rate-limit build fallback (`123456`)
 class AuthService extends ChangeNotifier {
+  bool _isDisposed = false;
+  bool get isDisposed => _isDisposed;
+
   AuthService({
     required this.config,
     required this.diagnostics,
@@ -590,6 +593,8 @@ class AuthService extends ChangeNotifier {
   }
 
   /// 3.4 Guest Mode entry (strictly local-only, never admin)
+  void continueAsGuest({bool isZh = false}) => enterGuestMode();
+
   void enterGuestMode() {
     _resendTimer?.cancel();
     _pendingOtpEmail = '';
@@ -634,7 +639,14 @@ class AuthService extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (_isDisposed) return;
+    super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _isDisposed = true;
     _resendTimer?.cancel();
     super.dispose();
   }

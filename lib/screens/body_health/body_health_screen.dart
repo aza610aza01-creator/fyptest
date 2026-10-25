@@ -46,10 +46,10 @@ class _BodyHealthScreenState extends State<BodyHealthScreen> {
   double _sleepHours = 7.5;
   int _steps = 8500;
   int _calories = 2250;
-  double _proteinG = 150;
-  double _carbsG = 230;
-  double _fatG = 70;
-  int _restingHr = 62;
+  final double _proteinG = 150;
+  final double _carbsG = 230;
+  final double _fatG = 70;
+  final int _restingHr = 62;
 
   static const List<HealthIntegrationDescriptor> _integrations = [
     HealthIntegrationDescriptor(

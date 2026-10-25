@@ -22,6 +22,7 @@ Future<void> main() async {
     try {
       await Supabase.initialize(
         url: config.supabaseUrl,
+        // ignore: deprecated_member_use
         anonKey: config.supabasePublishableKey,
       );
       supabaseReady = true;

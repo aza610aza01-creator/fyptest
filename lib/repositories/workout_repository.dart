@@ -214,6 +214,22 @@ class WorkoutRepository {
     }
   }
 
+  Future<void> deleteRoutine({
+    required String routineId,
+    required bool isGuest,
+  }) async {
+    final existing = prefs.getLocalRoutines();
+    final updated = existing.where((r) => r.id != routineId).toList();
+    await prefs.saveLocalRoutines(updated);
+
+    if (isGuest || db.client == null) return;
+    try {
+      await db.client!.from('routines').delete().eq('id', routineId);
+    } catch (e) {
+      db.diagnostics.logEvent('Routine deleted locally; cloud delete deferred.');
+    }
+  }
+
   Future<void> saveCardioLog({
     required CardioLogRecord log,
     required bool isGuest,

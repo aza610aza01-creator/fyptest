@@ -439,6 +439,15 @@ class _AiGymCloudAppState extends State<AiGymCloudApp>
             _userDataController.upsertRoutineInMemory(routine);
           }
         },
+        onDeleteRoutine: (routineId) async {
+          await _workoutRepo.deleteRoutine(
+            routineId: routineId,
+            isGuest: user.isGuest,
+          );
+          if (mounted) {
+            _userDataController.deleteRoutineInMemory(routineId);
+          }
+        },
         onSaveCardio: (cardio) async {
           await _workoutRepo.saveCardioLog(
             log: cardio,

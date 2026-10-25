@@ -9,7 +9,7 @@ import 'package:ai_gym_flutter/services/preference_service.dart';
 /// Admin Developer Tools screen (Section 22).
 /// Strictly gated: only accessible when `user.isAdmin` is true
 /// (verified Email == ADMIN_EMAIL + password + verified Email OTP, never Guest).
-/// Never displays passwords, OTPs, access/refresh tokens, service_role, or full Publishable Key.
+/// Never displays passwords, OTPs, access/refresh tokens, server_admin_role, or full Publishable Key.
 class DiagnosticsScreen extends StatefulWidget {
   const DiagnosticsScreen({
     super.key,

@@ -1,4 +1,6 @@
+import 'dart:math' as math;
 import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:ai_gym_flutter/core/theme/glass_theme.dart';
 import 'package:ai_gym_flutter/models/camera_detection.dart';
@@ -51,14 +53,14 @@ class GlassPanel extends StatelessWidget {
     final radius = BorderRadius.circular(borderRadius);
     final surfaceColor = glassEnabled
         ? (isDark
-            ? Colors.white.withValues(alpha: 0.08)
-            : Colors.white.withValues(alpha: 0.72))
+              ? Colors.white.withValues(alpha: 0.08)
+              : Colors.white.withValues(alpha: 0.72))
         : (isDark ? const Color(0xFF162632) : Colors.white);
     final borderColor = glassEnabled
         ? Colors.white.withValues(alpha: isDark ? 0.16 : 0.68)
         : (isDark
-            ? Colors.white.withValues(alpha: 0.10)
-            : const Color(0xFFD5E3D8));
+              ? Colors.white.withValues(alpha: 0.10)
+              : const Color(0xFFD5E3D8));
 
     final panelBody = Container(
       padding: padding,
@@ -74,14 +76,14 @@ class GlassPanel extends StatelessWidget {
           ),
         ],
       ),
-      child: child,
+      child: Material(
+        type: MaterialType.transparency,
+        child: child,
+      ),
     );
 
     if (!glassEnabled) {
-      return Padding(
-        padding: margin,
-        child: panelBody,
-      );
+      return Padding(padding: margin, child: panelBody);
     }
 
     return Padding(
@@ -125,13 +127,11 @@ class SectionHeader extends StatelessWidget {
           Expanded(
             child: Text(
               title,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.2,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700, letterSpacing: -0.2),
             ),
           ),
-          if (trailing != null) trailing!,
+          ?trailing,
         ],
       ),
     );
@@ -169,9 +169,8 @@ class EmptyStateCard extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.w700,
-                  ),
+              style: Theme.of(context).textTheme.titleMedium
+                  ?.copyWith(fontWeight: FontWeight.w700),
             ),
             const SizedBox(height: 6),
             Text(
@@ -234,10 +233,7 @@ class ErrorBannerCard extends StatelessWidget {
               ),
             ),
             if (onRetry != null)
-              TextButton(
-                onPressed: onRetry,
-                child: Text(retryLabel),
-              ),
+              TextButton(onPressed: onRetry, child: Text(retryLabel)),
           ],
         ),
       ),
@@ -265,10 +261,7 @@ class SimpleTrendChart extends StatelessWidget {
     if (values.length < 2) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 16),
-        child: Text(
-          emptyText,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
+        child: Text(emptyText, style: Theme.of(context).textTheme.bodyMedium),
       );
     }
     final scheme = Theme.of(context).colorScheme;
@@ -372,8 +365,10 @@ class _TrendLinePainter extends CustomPainter {
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        final dx = (points[i].dx - tp.width / 2)
-            .clamp(0.0, size.width - tp.width);
+        final dx = (points[i].dx - tp.width / 2).clamp(
+          0.0,
+          size.width - tp.width,
+        );
         tp.paint(canvas, Offset(dx, 2));
       }
     }
@@ -392,10 +387,12 @@ class DetectionBoundingBoxOverlay extends StatelessWidget {
     super.key,
     required this.detections,
     this.postureEvaluation,
+    this.flipX = false,
   });
 
   final List<CameraDetectionRecord> detections;
   final PostureEvaluation? postureEvaluation;
+  final bool flipX;
 
   @override
   Widget build(BuildContext context) {
@@ -404,6 +401,7 @@ class DetectionBoundingBoxOverlay extends StatelessWidget {
         painter: _BoundingBoxPainter(
           detections: detections,
           posture: postureEvaluation,
+          flipX: flipX,
         ),
         child: const SizedBox.expand(),
       ),
@@ -415,10 +413,12 @@ class _BoundingBoxPainter extends CustomPainter {
   _BoundingBoxPainter({
     required this.detections,
     this.posture,
+    required this.flipX,
   });
 
   final List<CameraDetectionRecord> detections;
   final PostureEvaluation? posture;
+  final bool flipX;
 
   static const Color _clothCyan = Color(0xFF64D2FF);
   static const Color _poseGreen = Color(0xFF30D158);
@@ -461,18 +461,25 @@ class _BoundingBoxPainter extends CustomPainter {
         ..color = accent.withValues(alpha: 0.08)
         ..style = PaintingStyle.fill;
 
-      final srcW =
-          det.sourceWidth <= 0 ? size.width : det.sourceWidth.toDouble();
-      final srcH =
-          det.sourceHeight <= 0 ? size.height : det.sourceHeight.toDouble();
-      final scaleX = size.width / srcW;
-      final scaleY = size.height / srcH;
+      final srcW = det.sourceWidth <= 0
+          ? size.width
+          : det.sourceWidth.toDouble();
+      final srcH = det.sourceHeight <= 0
+          ? size.height
+          : det.sourceHeight.toDouble();
+      final scale = math.max(size.width / srcW, size.height / srcH);
+      final offsetX = (size.width - srcW * scale) / 2;
+      final offsetY = (size.height - srcH * scale) / 2;
+      final rawLeft = offsetX + det.boundingBox.left * scale;
+      final rawRight = offsetX + det.boundingBox.right * scale;
+      final left = flipX ? size.width - rawRight : rawLeft;
+      final right = flipX ? size.width - rawLeft : rawRight;
 
       final rect = Rect.fromLTRB(
-        (det.boundingBox.left * scaleX).clamp(0.0, size.width),
-        (det.boundingBox.top * scaleY).clamp(0.0, size.height),
-        (det.boundingBox.right * scaleX).clamp(0.0, size.width),
-        (det.boundingBox.bottom * scaleY).clamp(0.0, size.height),
+        left.clamp(0.0, size.width),
+        (offsetY + det.boundingBox.top * scale).clamp(0.0, size.height),
+        right.clamp(0.0, size.width),
+        (offsetY + det.boundingBox.bottom * scale).clamp(0.0, size.height),
       );
 
       canvas.drawRRect(
@@ -485,7 +492,8 @@ class _BoundingBoxPainter extends CustomPainter {
       );
 
       final labelSpan = TextSpan(
-        text: ' ${det.conciseTitle} ${(det.confidence * 100).toStringAsFixed(0)}% ',
+        text:
+            ' ${det.conciseTitle} ${(det.confidence * 100).toStringAsFixed(0)}% ',
         style: TextStyle(
           color: const Color(0xFF050A0E),
           backgroundColor: accent,
@@ -493,12 +501,12 @@ class _BoundingBoxPainter extends CustomPainter {
           fontWeight: FontWeight.w700,
         ),
       );
-      final tp = TextPainter(
-        text: labelSpan,
-        textDirection: TextDirection.ltr,
-      )..layout(maxWidth: size.width);
-      final labelY =
-          (rect.top - tp.height - 2).clamp(0.0, size.height - tp.height);
+      final tp = TextPainter(text: labelSpan, textDirection: TextDirection.ltr)
+        ..layout(maxWidth: size.width);
+      final labelY = (rect.top - tp.height - 2).clamp(
+        0.0,
+        size.height - tp.height,
+      );
       final labelX = rect.left.clamp(0.0, size.width - tp.width);
       tp.paint(canvas, Offset(labelX, labelY));
     }
@@ -556,23 +564,125 @@ class _BoundingBoxPainter extends CustomPainter {
       canvas.drawCircle(pt, 3.6, jointInnerPaint);
     }
 
-    // Draw concise joint angle pills near primary & secondary anatomical landmarks
+    // 3. Draw SVG-style Joint Angle Protractor Arcs (Elbow 5-7-9, Hip 5-11-13, Knee 11-13-15)
+    final shPt = kpMap[5];
+    final elbPt = kpMap[7];
+    final wrPt = kpMap[9];
     final hipPt = kpMap[11] ?? Offset(size.width * 0.46, size.height * 0.54);
     final kneePt = kpMap[13] ?? Offset(size.width * 0.44, size.height * 0.72);
+    final ankPt = kpMap[15];
 
+    if (shPt != null && elbPt != null && wrPt != null) {
+      _drawJointAngleArc(
+        canvas,
+        elbPt,
+        shPt,
+        wrPt,
+        16.0,
+        const Color(0xFFFDE047),
+      );
+    }
+    if (shPt != null && ankPt != null) {
+      _drawJointAngleArc(canvas, hipPt, shPt, kneePt, 18.0, statusColor);
+    }
+
+    final primaryAnchor = p.exercise == PostureExerciseTarget.pushUp
+        ? (elbPt ?? kneePt)
+        : kneePt;
     _drawAnglePill(
       canvas,
       size,
-      anchor: Offset(kneePt.dx + 12, kneePt.dy - 8),
+      anchor: Offset(primaryAnchor.dx + 10, primaryAnchor.dy - 14),
       text: '${p.primaryJointLabel} ${p.primaryAngleDeg}°',
-      color: statusColor,
+      color: const Color(0xFFFDE047),
     );
     _drawAnglePill(
       canvas,
       size,
-      anchor: Offset(hipPt.dx + 12, hipPt.dy - 10),
+      anchor: Offset(hipPt.dx - 16, hipPt.dy - 24),
       text: '${p.secondaryJointLabel} ${p.secondaryAngleDeg}°',
       color: statusColor,
+    );
+
+    // 4. Right-Side Vertical ROM / Depth Gauge Bar (0% - 100%, pushup_unseen.mp4 CV style)
+    final barRight = size.width - 14.0;
+    final barTop = size.height * 0.18;
+    final barHeight = size.height * 0.58;
+    final trackRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(barRight - 12, barTop, 12, barHeight),
+      const Radius.circular(6),
+    );
+    canvas.drawRRect(trackRect, Paint()..color = const Color(0xCC0B1322));
+    canvas.drawRRect(
+      trackRect,
+      Paint()
+        ..color = Colors.white.withValues(alpha: 0.35)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.2,
+    );
+
+    final romNorm = (p.romPercent / 100.0).clamp(0.04, 1.0);
+    final fillH = barHeight * romNorm;
+    final fillRect = RRect.fromRectAndRadius(
+      Rect.fromLTWH(barRight - 10, barTop + (barHeight - fillH), 8, fillH),
+      const Radius.circular(4),
+    );
+    canvas.drawRRect(fillRect, Paint()..color = statusColor);
+    _drawAnglePill(
+      canvas,
+      size,
+      anchor: Offset(barRight - 46, barTop + barHeight + 4),
+      text: 'ROM ${p.romPercent}%',
+      color: statusColor,
+    );
+
+    // 5. Top-Left REPS & STAGE (DOWN / UP) CV Counter Box
+    _drawAnglePill(
+      canvas,
+      size,
+      anchor: const Offset(12, 42),
+      text:
+          'REPS ${p.goodReps} • STAGE: ${p.repStage} ${p.repStage == "DOWN" ? "▼" : "▲"}',
+      color: statusColor,
+    );
+  }
+
+  void _drawJointAngleArc(
+    Canvas canvas,
+    Offset vertex,
+    Offset p1,
+    Offset p2,
+    double radius,
+    Color color,
+  ) {
+    final a1 = math.atan2(p1.dy - vertex.dy, p1.dx - vertex.dx);
+    final a2 = math.atan2(p2.dy - vertex.dy, p2.dx - vertex.dx);
+    double sweep = a2 - a1;
+    while (sweep < -math.pi) {
+      sweep += math.pi * 2;
+    }
+    while (sweep > math.pi) {
+      sweep -= math.pi * 2;
+    }
+    final rect = Rect.fromCircle(center: vertex, radius: radius);
+    canvas.drawArc(
+      rect,
+      a1,
+      sweep,
+      true,
+      Paint()
+        ..color = color.withValues(alpha: 0.22)
+        ..style = PaintingStyle.fill,
+    );
+    canvas.drawArc(
+      rect,
+      a1,
+      sweep,
+      false,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8,
     );
   }
 
@@ -604,10 +714,10 @@ class _BoundingBoxPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _BoundingBoxPainter oldDelegate) {
     return oldDelegate.detections != detections ||
-        oldDelegate.posture != posture;
+        oldDelegate.posture != posture ||
+        oldDelegate.flipX != flipX;
   }
 }
-
 
 /// Accessible status pill combining icon, text, and high-contrast border so
 /// status is never communicated by color alone (Task 12 Accessibility).
@@ -654,6 +764,110 @@ class StatusBadge extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Skeuomorphic Stitched Leather Notebook container for the Digital Calendar (#9)
+/// and Bento Studio (`@design-system`, `@ui-ux-pro-max`).
+class SkeuomorphicLeatherNotebook extends StatelessWidget {
+  const SkeuomorphicLeatherNotebook({
+    super.key,
+    required this.child,
+    this.title = 'STITCHED LEATHER LOGBOOK • MARCH 2026',
+  });
+
+  final Widget child;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 6),
+      padding: const EdgeInsets.fromLTRB(12, 14, 12, 12),
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xFF5C3820), Color(0xFF3D2312)],
+        ),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF2A160A), width: 2.5),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x66000000),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Metallic Spiral Binder Rings
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(
+              7,
+              (_) => Container(
+                width: 10,
+                height: 16,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(3),
+                  gradient: const LinearGradient(
+                    colors: [
+                      Color(0xFF94A3B8),
+                      Color(0xFFF8FAFC),
+                      Color(0xFF475569),
+                    ],
+                  ),
+                  border: Border.all(color: const Color(0xFF1E293B)),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: const Color(0xFFD4AF37).withValues(alpha: 0.65),
+                width: 1.5,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 10.5,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFFFDE68A),
+                    letterSpacing: 0.8,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFFDF9F0),
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: const [
+                      BoxShadow(color: Color(0xFFDFD3BC), offset: Offset(0, 3)),
+                    ],
+                  ),
+                  child: DefaultTextStyle.merge(
+                    style: const TextStyle(color: Color(0xFF2C1D11)),
+                    child: child,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

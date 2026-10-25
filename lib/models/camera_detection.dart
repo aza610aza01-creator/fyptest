@@ -12,22 +12,10 @@ enum DetectionEngineMode {
     'yolov8_gym_cloth',
     'YOLOv8n Multi-Head (Gym Equipment + Sportswear)',
   ),
-  yoloV8Cloth(
-    'yolov8_cloth',
-    'YOLOv8n-Cloth (Sportswear & Lifting Gear)',
-  ),
-  yoloV8Gym(
-    'yolov8_gym',
-    'YOLOv8n-Gym (Equipment Classifier)',
-  ),
-  yoloHybrid(
-    'yolo_mlkit_hybrid',
-    'YOLOv8 + ML Kit Hybrid Pipeline',
-  ),
-  mlKitObject(
-    'mlkit_object',
-    'Google ML Kit Object Detector',
-  );
+  yoloV8Cloth('yolov8_cloth', 'YOLOv8n-Cloth (Sportswear & Lifting Gear)'),
+  yoloV8Gym('yolov8_gym', 'YOLOv8n-Gym (Equipment Classifier)'),
+  yoloHybrid('yolo_mlkit_hybrid', 'YOLOv8 + ML Kit Hybrid Pipeline'),
+  mlKitObject('mlkit_object', 'Google ML Kit Object Detector');
 
   const DetectionEngineMode(this.code, this.displayName);
   final String code;
@@ -56,13 +44,14 @@ enum DetectionEngineMode {
 
 /// Target gym exercise for real-time YOLOv8n-Pose biomechanical posture verification.
 enum PostureExerciseTarget {
-  squat(
-    'squat',
-    'Squat',
-    '深蹲',
-    'Knee Depth & Spine Alignment',
-    '膝關節深度與脊柱中立',
+  pushUp(
+    'push_up',
+    'Push-Up',
+    '伏地挺身',
+    'Elbow Depth 74°–168° & Plank Alignment',
+    '手肘彎曲深度與身體平板直線度',
   ),
+  squat('squat', 'Squat', '深蹲', 'Knee Depth & Spine Alignment', '膝關節深度與脊柱中立'),
   bicepCurl(
     'bicep_curl',
     'Bicep Curl',
@@ -101,11 +90,7 @@ enum PostureExerciseTarget {
 }
 
 /// Real-time posture correctness classification.
-enum PostureStatus {
-  correct,
-  needsAdjustment,
-  incorrect,
-}
+enum PostureStatus { correct, needsAdjustment, incorrect }
 
 /// Single anatomical keypoint from YOLOv8n-Pose (COCO 17-keypoint topology, normalized 0..1).
 class PostureKeypoint {
@@ -145,6 +130,8 @@ class PostureEvaluation {
     required this.tipZh,
     required this.keypoints,
     required this.modelName,
+    this.romPercent = 88,
+    this.repStage = 'DOWN',
   });
 
   final PostureExerciseTarget exercise;
@@ -163,8 +150,40 @@ class PostureEvaluation {
   final String tipZh;
   final List<PostureKeypoint> keypoints;
   final String modelName;
+  final int romPercent;
+  final String repStage;
 
   bool get isCorrect => status == PostureStatus.correct;
+
+  factory PostureEvaluation.unavailable(
+    PostureExerciseTarget exercise, {
+    String headlineEn = 'Pose model unavailable',
+    String headlineZh = '姿勢模型尚未載入',
+    String tipEn = 'A pose model is required for form coaching when supported camera inference is running.',
+    String tipZh = '支援的相機推論啟動後，姿勢指導仍需要另外載入姿勢模型。',
+    String modelName = 'No pose model loaded',
+  }) {
+    return PostureEvaluation(
+      exercise: exercise,
+      status: PostureStatus.needsAdjustment,
+      formScore: 0,
+      primaryJointLabel: 'Pose',
+      primaryAngleDeg: 0,
+      secondaryJointLabel: 'Pose',
+      secondaryAngleDeg: 0,
+      symmetryPercent: 0,
+      goodReps: 0,
+      formAlerts: 0,
+      headlineEn: headlineEn,
+      headlineZh: headlineZh,
+      tipEn: tipEn,
+      tipZh: tipZh,
+      keypoints: const <PostureKeypoint>[],
+      modelName: modelName,
+      romPercent: 0,
+      repStage: '--',
+    );
+  }
 }
 
 /// Model for `public.camera_detections` storing YOLO / ML Kit object, cloth & posture metadata.
@@ -205,7 +224,8 @@ class CameraDetectionRecord {
   bool get isClothCategory =>
       (classId >= 10 && classId < 20) ||
       detectionEngine == 'yolov8_cloth' ||
-      label.toLowerCase().contains('cloth:');
+      label.toLowerCase().contains('cloth:') ||
+      label.toLowerCase().contains('clothing');
 
   /// True when this detection represents a YOLOv8n-Pose posture evaluation (`classId >= 20`).
   bool get isPostureCategory =>
@@ -226,12 +246,15 @@ class CameraDetectionRecord {
     final rawBox = json['bounding_box'];
     Rect box = Rect.zero;
     if (rawBox is Map) {
-      final left =
-          (rawBox['left'] is num) ? (rawBox['left'] as num).toDouble() : 0.0;
-      final top =
-          (rawBox['top'] is num) ? (rawBox['top'] as num).toDouble() : 0.0;
-      final right =
-          (rawBox['right'] is num) ? (rawBox['right'] as num).toDouble() : 0.0;
+      final left = (rawBox['left'] is num)
+          ? (rawBox['left'] as num).toDouble()
+          : 0.0;
+      final top = (rawBox['top'] is num)
+          ? (rawBox['top'] as num).toDouble()
+          : 0.0;
+      final right = (rawBox['right'] is num)
+          ? (rawBox['right'] as num).toDouble()
+          : 0.0;
       final bottom = (rawBox['bottom'] is num)
           ? (rawBox['bottom'] as num).toDouble()
           : 0.0;
@@ -254,10 +277,9 @@ class CameraDetectionRecord {
           : 0,
       detectedAt: json['detected_at'] != null
           ? (DateTime.tryParse(json['detected_at'].toString()) ??
-              DateTime.now().toUtc())
+                DateTime.now().toUtc())
           : DateTime.now().toUtc(),
-      detectionEngine:
-          (json['detection_engine'] ?? 'yolov8n_pose').toString(),
+      detectionEngine: (json['detection_engine'] ?? 'yolov8n_pose').toString(),
       classId: json['class_id'] is num ? (json['class_id'] as num).toInt() : 0,
       inferenceMs: json['inference_ms'] is num
           ? (json['inference_ms'] as num).toDouble()
@@ -318,7 +340,6 @@ class CameraDetectionRecord {
   }
 }
 
-
 /// Explicit 10-state camera & on-device AI model lifecycle machine (Mandatory Task 8).
 enum CameraLifecycleStage {
   permissionNotRequested('Permission not requested', '尚未請求相機權限'),
@@ -344,9 +365,24 @@ enum CameraLifecycleStage {
 
 /// Resolution and frame-throttling performance presets for on-device inference.
 enum CameraPerformancePreset {
-  lowPower360p('Low Power (360p • 650ms)', '省電模式 (360p • 650ms)', '640x360', 650),
-  balanced720p('Balanced (720p • 400ms)', '平衡模式 (720p • 400ms)', '1280x720', 400),
-  highAccuracy1080p('High Precision (1080p • 260ms)', '高精度模式 (1080p • 260ms)', '1920x1080', 260);
+  lowPower360p(
+    'Low Power (360p • 650ms)',
+    '省電模式 (360p • 650ms)',
+    '640x360',
+    650,
+  ),
+  balanced720p(
+    'Balanced (720p • 400ms)',
+    '平衡模式 (720p • 400ms)',
+    '1280x720',
+    400,
+  ),
+  highAccuracy1080p(
+    'High Precision (1080p • 260ms)',
+    '高精度模式 (1080p • 260ms)',
+    '1920x1080',
+    260,
+  );
 
   const CameraPerformancePreset(
     this.labelEn,

@@ -53,6 +53,7 @@ class RoutineExerciseItem {
       'id': id,
       'routine_id': routineId,
       'exercise_id': exerciseId,
+      'exercise_name': exerciseName,
       'ordering': ordering,
       'target_sets': targetSets,
       'target_reps': targetReps,
@@ -102,6 +103,26 @@ class WorkoutRoutine {
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
           : null,
+    );
+  }
+
+  WorkoutRoutine copyWith({
+    String? id,
+    String? userId,
+    String? name,
+    String? description,
+    String? workoutMethod,
+    List<RoutineExerciseItem>? items,
+    DateTime? createdAt,
+  }) {
+    return WorkoutRoutine(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      name: name ?? this.name,
+      description: description ?? this.description,
+      workoutMethod: workoutMethod ?? this.workoutMethod,
+      items: items ?? this.items,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 

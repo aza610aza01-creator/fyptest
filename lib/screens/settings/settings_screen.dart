@@ -580,7 +580,7 @@ class SettingsScreen extends StatelessWidget {
                 contentPadding: EdgeInsets.zero,
                 title: Text('Privacy Policy & Terms of Service'),
                 subtitle: Text(
-                  'https://eprmvrtcpuydxhtzwfep.supabase.co/legal/privacy-and-terms (Placeholder)',
+                  'https://your-project-ref.supabase.co/legal/privacy-and-terms (Placeholder)',
                 ),
               ),
               // Admin Developer Tools strictly hidden from standard & Guest users

@@ -1,12 +1,12 @@
 import 'package:flutter/foundation.dart';
 
 /// Holds compile-time configuration injected via `--dart-define`.
-/// Configured for:
-/// - Project: aza610aza01-creator's Project
-/// - Organization: aza610aza01-creator's Org | Supabase
-/// - Publishable Key: sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP (overridable via --dart-define)
-/// - Guardrail: If a `sb_secret_...` key is passed to `--dart-define`, client browser/mobile
-///   sessions automatically use the RLS-safe Publishable Key so Supabase browser checks never fail.
+/// Strictly adheres to SEC-1, SEC-2, SEC-3, and HC-1:
+/// - No hardcoded Supabase URLs, anon/publishable keys, or server secrets in source.
+/// - Reads `SUPABASE_URL` and `SUPABASE_PUBLISHABLE_KEY` (or `SUPABASE_ANON_KEY`)
+///   exclusively via `String.fromEnvironment`.
+/// - Rejects any `sb_secret_...` or `server-admin` key passed by mistake so the
+///   client only ever initializes with an RLS-safe anon/publishable key.
 class AppConfig {
   const AppConfig({
     required this.supabaseUrl,
@@ -17,17 +17,11 @@ class AppConfig {
     this.serverSecretKeyConfigured = false,
   });
 
-  static const String defaultSupabaseProjectName =
-      "aza610aza01-creator's Project";
+  static const String defaultSupabaseProjectName = 'AI Gym Cloud Supabase Project';
+  static const String defaultSupabaseOrgName = 'AI Gym Cloud Organization';
 
-  static const String defaultSupabaseOrgName =
-      "aza610aza01-creator's Org | Supabase";
-
-  static const String defaultSupabaseUrl =
-      'https://eprmvrtcpuydxhtzwfep.supabase.co';
-
-  static const String defaultSupabasePublishableKey =
-      'sb_publishable_7psvpRTKPvrcIFZjNcynIQ_KiDD5lgP';
+  static const String defaultSupabaseUrl = '';
+  static const String defaultSupabasePublishableKey = '';
 
   static const String _envUrl = String.fromEnvironment(
     'SUPABASE_URL',
@@ -37,6 +31,11 @@ class AppConfig {
   static const String _envPublishableKey = String.fromEnvironment(
     'SUPABASE_PUBLISHABLE_KEY',
     defaultValue: defaultSupabasePublishableKey,
+  );
+
+  static const String _envAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: '',
   );
 
   static const String _envSecretKey = String.fromEnvironment(
@@ -56,16 +55,19 @@ class AppConfig {
   final String supabaseOrgName;
   final bool serverSecretKeyConfigured;
 
+  /// Alias for `supabasePublishableKey` supporting standard `SUPABASE_ANON_KEY` callers.
+  String get supabaseAnonKey => supabasePublishableKey;
+
   factory AppConfig.fromEnvironment() {
-    final rawPub = _envPublishableKey.trim();
-    // Never pass a sb_secret_ key to client-side Supabase.initialize in Chrome/Edge
+    final rawPub = _envPublishableKey.trim().isNotEmpty
+        ? _envPublishableKey.trim()
+        : _envAnonKey.trim();
+    // Never pass a server secret key to client-side Supabase.initialize
     final isSecretInPub = rawPub.startsWith('sb_secret_');
-    final safePublishableKey = (rawPub.isEmpty || isSecretInPub)
-        ? defaultSupabasePublishableKey
-        : rawPub;
+    final safePublishableKey = isSecretInPub ? '' : rawPub;
 
     return AppConfig(
-      supabaseUrl: _envUrl.trim().isEmpty ? defaultSupabaseUrl : _envUrl.trim(),
+      supabaseUrl: _envUrl.trim(),
       supabasePublishableKey: safePublishableKey,
       adminEmail: _envAdminEmail.trim().toLowerCase(),
       serverSecretKeyConfigured:
@@ -74,7 +76,7 @@ class AppConfig {
   }
 
   /// Returns true only when both a valid https URL and non-placeholder
-  /// Publishable Key are provided.
+  /// anon/publishable key are provided via `--dart-define`.
   bool get isConfigured {
     if (supabaseUrl.isEmpty || !supabaseUrl.startsWith('https://')) {
       return false;
@@ -83,6 +85,7 @@ class AppConfig {
       return false;
     }
     if (supabasePublishableKey == 'YOUR_PUBLISHABLE_KEY' ||
+        supabasePublishableKey == 'YOUR_SUPABASE_ANON_KEY' ||
         supabasePublishableKey.startsWith('sb_secret_')) {
       return false;
     }

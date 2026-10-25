@@ -25,6 +25,7 @@ class WorkoutScreen extends StatefulWidget {
     required this.notifications,
     required this.onSaveWorkout,
     required this.onSaveRoutine,
+    this.onDeleteRoutine,
     required this.onSaveCardio,
   });
 
@@ -35,6 +36,7 @@ class WorkoutScreen extends StatefulWidget {
   final NotificationService notifications;
   final Future<WorkoutRecord> Function(WorkoutRecord workout) onSaveWorkout;
   final Future<void> Function(WorkoutRoutine routine) onSaveRoutine;
+  final Future<void> Function(String routineId)? onDeleteRoutine;
   final Future<void> Function(CardioLogRecord cardio) onSaveCardio;
 
   @override
@@ -62,7 +64,7 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
   String _cardioType = 'Running';
   int _cardioMinutes = 20;
   double _cardioDistance = 3.5;
-  int _cardioHeartRate = 142;
+  final int _cardioHeartRate = 142;
 
   WorkoutDraftData? _recoverableDraft;
 
@@ -258,6 +260,82 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
         }
       }
     });
+  }
+
+  Future<void> _editRoutineDialog(WorkoutRoutine routine, bool isZh) async {
+    final nameCtrl = TextEditingController(text: routine.name);
+    final descCtrl = TextEditingController(text: routine.description);
+    final updated = await showDialog<WorkoutRoutine>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(isZh ? '編輯課表範本' : 'Edit Routine Template'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              key: const Key('edit_routine_name_field'),
+              controller: nameCtrl,
+              decoration: InputDecoration(
+                labelText: isZh ? '範本名稱' : 'Template Name',
+              ),
+            ),
+            const SizedBox(height: 10),
+            TextField(
+              key: const Key('edit_routine_desc_field'),
+              controller: descCtrl,
+              decoration: InputDecoration(
+                labelText: isZh ? '範本說明' : 'Description',
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: Text(isZh ? '取消' : 'Cancel'),
+          ),
+          FilledButton(
+            key: const Key('save_edited_routine_button'),
+            onPressed: () {
+              final nextName = nameCtrl.text.trim().isEmpty
+                  ? routine.name
+                  : nameCtrl.text.trim();
+              Navigator.of(ctx).pop(
+                routine.copyWith(
+                  name: nextName,
+                  description: descCtrl.text.trim(),
+                ),
+              );
+            },
+            child: Text(isZh ? '儲存變更' : 'Save Changes'),
+          ),
+        ],
+      ),
+    );
+    if (updated != null) {
+      await widget.onSaveRoutine(updated);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            isZh ? '已更新課表範本：${updated.name}' : 'Updated routine template: ${updated.name}',
+          ),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteRoutine(WorkoutRoutine routine, bool isZh) async {
+    if (widget.onDeleteRoutine == null) return;
+    await widget.onDeleteRoutine!(routine.id);
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          isZh ? '已刪除課表範本：${routine.name}' : 'Deleted routine template: ${routine.name}',
+        ),
+      ),
+    );
   }
 
   Future<void> _saveCurrentAsRoutine(bool isZh) async {
@@ -498,18 +576,45 @@ class _WorkoutScreenState extends State<WorkoutScreen> {
                   title: isZh ? '從課表範本開始' : 'Start from Routine Template',
                   icon: Icons.bookmark_added_outlined,
                 ),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: widget.routines
-                      .map(
-                        (r) => ActionChip(
-                          avatar: const Icon(Icons.play_arrow, size: 18),
-                          label: Text(r.name),
+                ...widget.routines.map(
+                  (r) => ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    leading: const Icon(Icons.play_circle_outline, color: Color(0xFF30D158)),
+                    title: Text(
+                      r.name,
+                      style: const TextStyle(fontWeight: FontWeight.w700),
+                    ),
+                    subtitle: Text(
+                      isZh
+                          ? '${r.items.length} 個動作${r.description.isNotEmpty ? " • ${r.description}" : ""}'
+                          : '${r.items.length} exercise(s)${r.description.isNotEmpty ? " • ${r.description}" : ""}',
+                    ),
+                    onTap: () => _loadRoutineTemplate(r),
+                    trailing: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        IconButton(
+                          key: Key('start_routine_${r.id}'),
+                          tooltip: isZh ? '開始此課表' : 'Start Routine Session',
+                          icon: const Icon(Icons.play_arrow_rounded),
                           onPressed: () => _loadRoutineTemplate(r),
                         ),
-                      )
-                      .toList(),
+                        IconButton(
+                          key: Key('edit_routine_${r.id}'),
+                          tooltip: isZh ? '編輯範本' : 'Edit Template',
+                          icon: const Icon(Icons.edit_outlined, size: 20),
+                          onPressed: () => _editRoutineDialog(r, isZh),
+                        ),
+                        if (widget.onDeleteRoutine != null)
+                          IconButton(
+                            key: Key('delete_routine_${r.id}'),
+                            tooltip: isZh ? '刪除範本' : 'Delete Template',
+                            icon: const Icon(Icons.delete_outline, size: 20),
+                            onPressed: () => _confirmDeleteRoutine(r, isZh),
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ],
             ),

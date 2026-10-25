@@ -1,4 +1,5 @@
 import 'package:camera/camera.dart';
+import 'package:camera_macos/camera_macos.dart';
 import 'package:flutter/material.dart';
 import 'package:ai_gym_flutter/core/localization/app_localizations.dart';
 import 'package:ai_gym_flutter/core/widgets/glass_widgets.dart';
@@ -30,7 +31,8 @@ class CameraDetectionScreen extends StatefulWidget {
   final Future<void> Function(
     CameraDetectionRecord detection,
     String? localCapturedFilePath,
-  ) onSaveDetection;
+  )
+  onSaveDetection;
 
   @override
   State<CameraDetectionScreen> createState() => _CameraDetectionScreenState();
@@ -45,7 +47,9 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       final isZh = widget.prefs.languageCode.toLowerCase().startsWith('zh');
-      if (!widget.cameraService.isCameraReady) {
+      if (!widget.cameraService.isCameraReady &&
+          !widget.cameraService.isWebTarget &&
+          !widget.cameraService.isMacOSTarget) {
         widget.cameraService.openComputerCamera(
           isZh: isZh,
           userId: widget.userId,
@@ -67,6 +71,13 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
         state == AppLifecycleState.paused ||
         state == AppLifecycleState.detached) {
       widget.cameraService.stopCamera();
+    } else if (state == AppLifecycleState.resumed &&
+        !widget.cameraService.isCameraReady &&
+        !widget.cameraService.isWebTarget) {
+      widget.cameraService.openComputerCamera(
+        isZh: widget.prefs.languageCode.toLowerCase().startsWith('zh'),
+        userId: widget.userId,
+      );
     }
   }
 
@@ -86,7 +97,9 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
           content: Text(
             widget.isGuest
                 ? (isZh ? '已儲存姿勢分析紀錄（訪客模式）' : 'Saved posture snapshot locally')
-                : (isZh ? '已同步姿勢分析紀錄至雲端！' : 'Synced posture snapshot to Supabase!'),
+                : (isZh
+                      ? '已同步姿勢分析紀錄至雲端！'
+                      : 'Synced posture snapshot to Supabase!'),
           ),
         ),
       );
@@ -113,22 +126,36 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
       builder: (context, _) {
         final svc = widget.cameraService;
         final controller = svc.cameraController;
-        final hasHardwarePreview = svc.isCameraInitialized && controller != null;
+        final hasHardwarePreview =
+            svc.isCameraInitialized && controller != null;
+        final pythonFrame = svc.pythonCameraFrame;
+        final hasPythonPreview =
+            svc.isPythonYoloConnected && pythonFrame != null;
+        final hasMacOSPreview = svc.isMacOSTarget && svc.isMacOSCameraRequested;
         final posture = svc.currentPosture;
+        final hasPoseData = posture.keypoints.isNotEmpty;
         final detections = svc.detections;
         final lenses = svc.availableLenses;
 
-        final statusColor = switch (posture.status) {
-          PostureStatus.correct => const Color(0xFF30D158),
-          PostureStatus.needsAdjustment => const Color(0xFFFF9F0A),
-          PostureStatus.incorrect => const Color(0xFFFF453A),
-        };
+        final statusColor = hasPoseData
+            ? switch (posture.status) {
+                PostureStatus.correct => const Color(0xFF30D158),
+                PostureStatus.needsAdjustment => const Color(0xFFFF9F0A),
+                PostureStatus.incorrect => const Color(0xFFFF453A),
+              }
+            : const Color(0xFF64D2FF);
 
-        final statusBadgeText = switch (posture.status) {
-          PostureStatus.correct => isZh ? '✓ 姿勢標準' : '✓ Correct Form',
-          PostureStatus.needsAdjustment => isZh ? '⚠ 建議微調' : '⚠ Adjust Form',
-          PostureStatus.incorrect => isZh ? '✕ 姿勢警示' : '✕ Form Alert',
-        };
+        final statusBadgeText = hasPoseData
+            ? switch (posture.status) {
+                PostureStatus.correct => isZh ? '✓ 姿勢標準' : '✓ Correct Form',
+                PostureStatus.needsAdjustment =>
+                  isZh ? '⚠ 建議微調' : '⚠ Adjust Form',
+                PostureStatus.incorrect => isZh ? '✕ 姿勢警示' : '✕ Form Alert',
+              }
+            : (isZh ? '尚無姿勢模型' : 'Pose model unavailable');
+        final activeStatusBadgeText = hasPythonPreview
+            ? (svc.isLiveStreaming ? 'Python YOLO Live' : 'Python YOLO Paused')
+            : statusBadgeText;
 
         return ListView(
           padding: const EdgeInsets.fromLTRB(16, 10, 16, 96),
@@ -146,7 +173,9 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                       label: Text(
                         isZh ? ex.labelZh : ex.labelEn,
                         style: TextStyle(
-                          fontWeight: active ? FontWeight.w800 : FontWeight.w600,
+                          fontWeight: active
+                              ? FontWeight.w800
+                              : FontWeight.w600,
                           fontSize: 12.5,
                         ),
                       ),
@@ -162,7 +191,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
             ),
             const SizedBox(height: 8),
 
-            // 2. Hero Live Camera Viewfinder + 17-Keypoint Skeleton Overlay
+            // Live camera viewfinder with detections from the active detector.
             Container(
               height: 350,
               decoration: BoxDecoration(
@@ -189,18 +218,80 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                       flipX: svc.mirrorComputerCamera,
                       child: CameraPreview(controller),
                     )
-                  else
+                  else if (hasPythonPreview)
+                    Image.memory(
+                      pythonFrame,
+                      fit: BoxFit.contain,
+                      gaplessPlayback: true,
+                      filterQuality: FilterQuality.low,
+                    )
+                  else if (hasMacOSPreview)
+                    CameraMacOSView(
+                      key: const ValueKey<String>('macos-camera-preview'),
+                      cameraMode: CameraMacOSMode.photo,
+                      enableAudio: false,
+                      fit: BoxFit.cover,
+                      onCameraInizialized: svc.markMacOSCameraInitialized,
+                      onCameraLoading: (error) {
+                        if (error != null) {
+                          WidgetsBinding.instance.addPostFrameCallback((_) {
+                            if (mounted) {
+                              svc.markMacOSCameraError(error, isZh: isZh);
+                            }
+                          });
+                        }
+                        return Center(
+                          child: error == null
+                              ? const CircularProgressIndicator()
+                              : Text(
+                                  error.toString(),
+                                  style: const TextStyle(color: Colors.white),
+                                  textAlign: TextAlign.center,
+                                ),
+                        );
+                      },
+                    )
+                  else if (svc.isVirtualCameraActive)
                     _VirtualGymCameraCanvas(
                       sceneIndex: svc.virtualSceneIndex,
                       isStreaming: svc.isLiveStreaming,
                       isZh: isZh,
+                    )
+                  else
+                    _CameraUnavailableCanvas(
+                      isZh: isZh,
+                      message: svc.errorMessage,
                     ),
 
                   // 17-Keypoint Skeleton + Equipment Overlay
-                  DetectionBoundingBoxOverlay(
-                    detections: detections,
-                    postureEvaluation: posture,
-                  ),
+                  if (!hasPythonPreview && !hasMacOSPreview)
+                    DetectionBoundingBoxOverlay(
+                      detections: detections,
+                      postureEvaluation: posture,
+                      flipX: hasHardwarePreview && svc.mirrorComputerCamera,
+                    ),
+
+                  if (svc.errorMessage != null)
+                    Positioned(
+                      top: 54,
+                      left: 12,
+                      right: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.78),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          svc.errorMessage!,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 11,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
 
                   // Top Floating HUD Bar
                   Positioned(
@@ -232,7 +323,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                               ),
                               const SizedBox(width: 6),
                               Text(
-                                'YOLOv8-Pose • ${svc.lastInferenceMs.toStringAsFixed(1)} ms',
+                                '${svc.detectionModeDisplayName.split('(').first.trim()} • ${svc.hasValidLatency ? "${svc.lastInferenceMs.toStringAsFixed(1)} ms" : (isZh ? "待機" : "idle")}',
                                 style: const TextStyle(
                                   color: Colors.white,
                                   fontSize: 11,
@@ -255,7 +346,9 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                             ),
                           ),
                           child: Text(
-                            '$statusBadgeText • ${posture.formScore}%',
+                            hasPoseData
+                                ? '$activeStatusBadgeText • ${posture.formScore}%'
+                                : activeStatusBadgeText,
                             style: TextStyle(
                               color: statusColor,
                               fontSize: 11,
@@ -276,8 +369,9 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                       children: [
                         FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor:
-                                Colors.black.withValues(alpha: 0.75),
+                            backgroundColor: Colors.black.withValues(
+                              alpha: 0.75,
+                            ),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
                               horizontal: 12,
@@ -287,20 +381,36 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                           onPressed: svc.isProcessing
                               ? null
                               : () => svc.openComputerCamera(
-                                    userId: widget.userId,
-                                    isZh: isZh,
-                                  ),
+                                  userId: widget.userId,
+                                  isZh: isZh,
+                                ),
                           icon: Icon(
-                            hasHardwarePreview
+                            hasHardwarePreview ||
+                                    hasPythonPreview ||
+                                    hasMacOSPreview
                                 ? Icons.videocam
                                 : Icons.laptop_chromebook,
                             size: 16,
                             color: const Color(0xFF64D2FF),
                           ),
                           label: Text(
-                            hasHardwarePreview
-                                ? (isZh ? '鏡頭連線中' : 'Webcam Live')
-                                : (isZh ? '啟用相機' : 'Use Camera'),
+                            hasPythonPreview
+                                ? (svc.isLiveStreaming
+                                      ? 'Python YOLO Live'
+                                      : 'Python YOLO Paused')
+                                : (hasMacOSPreview
+                                      ? (svc.isCameraReady
+                                            ? 'Mac Camera Live'
+                                            : (isZh
+                                                  ? '正在啟動相機...'
+                                                  : 'Starting Camera...'))
+                                      : (hasHardwarePreview
+                                            ? (isZh
+                                                  ? '鏡頭連線中'
+                                                  : 'Webcam Live')
+                                            : (isZh
+                                                  ? '啟用相機'
+                                                  : 'Use Camera'))),
                             style: const TextStyle(
                               fontSize: 11.5,
                               fontWeight: FontWeight.w700,
@@ -314,42 +424,55 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                           icon: const Icon(Icons.flip, size: 17),
                         ),
                         const SizedBox(width: 6),
-                        IconButton.filledTonal(
-                          tooltip: svc.isLiveStreaming
-                              ? (isZh ? '暫停即時偵測' : 'Pause Live Coach')
-                              : (isZh ? '繼續即時偵測' : 'Resume Live Coach'),
-                          onPressed: () => svc.toggleLiveStream(
-                            userId: widget.userId,
-                            isZh: isZh,
-                          ),
-                          icon: Icon(
-                            svc.isLiveStreaming
-                                ? Icons.pause_rounded
-                                : Icons.play_arrow_rounded,
-                            size: 18,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 7,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withValues(alpha: 0.78),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            isZh
-                                ? '標準次數 ${posture.goodReps}'
-                                : '${posture.goodReps} Good Reps',
-                            style: const TextStyle(
-                              color: Color(0xFF30D158),
-                              fontSize: 11.5,
-                              fontWeight: FontWeight.w800,
+                        if (svc.supportsLiveInference)
+                          IconButton.filledTonal(
+                            tooltip: svc.isLiveStreaming
+                                ? (isZh ? '暫停即時偵測' : 'Pause Live Coach')
+                                : (isZh ? '繼續即時偵測' : 'Resume Live Coach'),
+                            onPressed: () => svc.toggleLiveStream(
+                              userId: widget.userId,
+                              isZh: isZh,
+                            ),
+                            icon: Icon(
+                              svc.isLiveStreaming
+                                  ? Icons.pause_rounded
+                                  : Icons.play_arrow_rounded,
+                              size: 18,
                             ),
                           ),
-                        ),
+                        if (!svc.supportsLiveInference)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text(
+                              isZh ? '僅相機預覽' : 'Preview only',
+                              style: const TextStyle(
+                                color: Colors.white70,
+                                fontSize: 10,
+                              ),
+                            ),
+                          ),
+                        const Spacer(),
+                        if (hasPoseData)
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 7,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.78),
+                              borderRadius: BorderRadius.circular(999),
+                            ),
+                            child: Text(
+                              isZh
+                                  ? '標準次數 ${posture.goodReps}'
+                                  : '${posture.goodReps} Good Reps',
+                              style: const TextStyle(
+                                color: Color(0xFF30D158),
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
                       ],
                     ),
                   ),
@@ -372,73 +495,80 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: statusColor.withValues(alpha: 0.18),
-                          borderRadius: BorderRadius.circular(12),
+                  if (hasPoseData)
+                    Row(
+                      children: [
+                        Container(
+                          width: 38,
+                          height: 38,
+                          decoration: BoxDecoration(
+                            color: statusColor.withValues(alpha: 0.18),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          alignment: Alignment.center,
+                          child: Icon(
+                            posture.isCorrect
+                                ? Icons.check_circle_rounded
+                                : (posture.status ==
+                                          PostureStatus.needsAdjustment
+                                      ? Icons.tune_rounded
+                                      : Icons.warning_amber_rounded),
+                            color: statusColor,
+                            size: 22,
+                          ),
                         ),
-                        alignment: Alignment.center,
-                        child: Icon(
-                          posture.isCorrect
-                              ? Icons.check_circle_rounded
-                              : (posture.status ==
-                                      PostureStatus.needsAdjustment
-                                  ? Icons.tune_rounded
-                                  : Icons.warning_amber_rounded),
-                          color: statusColor,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              isZh ? posture.headlineZh : posture.headlineEn,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: -0.2,
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                isZh ? posture.headlineZh : posture.headlineEn,
+                                style: const TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w800,
+                                  letterSpacing: -0.2,
+                                ),
                               ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              isZh ? posture.tipZh : posture.tipEn,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
+                              const SizedBox(height: 2),
+                              Text(
+                                isZh ? posture.tipZh : posture.tipEn,
+                                style: Theme.of(context).textTheme.bodySmall,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    )
+                  else
+                    Text(
+                      isZh ? '物件方框來自相機畫面；姿勢指導需要另外載入姿勢模型。' : 'Object boxes come from the camera feed. Form coaching requires a separate pose model.',
+                      style: Theme.of(context).textTheme.bodySmall,
+                    ),
                   const SizedBox(height: 12),
                   // Concise 3-Metric Biomechanical Strip
-                  Row(
-                    children: [
-                      _MetricPill(
-                        label: posture.primaryJointLabel,
-                        value: '${posture.primaryAngleDeg}°',
-                        accent: statusColor,
-                      ),
-                      const SizedBox(width: 8),
-                      _MetricPill(
-                        label: posture.secondaryJointLabel,
-                        value: '${posture.secondaryAngleDeg}°',
-                        accent: const Color(0xFF64D2FF),
-                      ),
-                      const SizedBox(width: 8),
-                      _MetricPill(
-                        label: isZh ? '左右對稱' : 'Symmetry',
-                        value: '${posture.symmetryPercent}%',
-                        accent: const Color(0xFF9ED756),
-                      ),
-                    ],
-                  ),
+                  if (hasPoseData)
+                    Row(
+                      children: [
+                        _MetricPill(
+                          label: posture.primaryJointLabel,
+                          value: '${posture.primaryAngleDeg}°',
+                          accent: statusColor,
+                        ),
+                        const SizedBox(width: 8),
+                        _MetricPill(
+                          label: posture.secondaryJointLabel,
+                          value: '${posture.secondaryAngleDeg}°',
+                          accent: const Color(0xFF64D2FF),
+                        ),
+                        const SizedBox(width: 8),
+                        _MetricPill(
+                          label: isZh ? '左右對稱' : 'Symmetry',
+                          value: '${posture.symmetryPercent}%',
+                          accent: const Color(0xFF9ED756),
+                        ),
+                      ],
+                    ),
                   const SizedBox(height: 10),
                   // Quick Posture State Tester + Cloud Save Row
                   Wrap(
@@ -446,42 +576,44 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                     runSpacing: 6,
                     crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
-                      _PosturePresetChip(
-                        label: isZh ? '自動即時' : 'Auto Live',
-                        selected: svc.postureSimulationPreset == 0,
-                        onTap: () => svc.setPostureSimulationPreset(
-                          0,
-                          userId: widget.userId,
-                          isZh: isZh,
+                      if (svc.isVirtualCameraActive) ...[
+                        _PosturePresetChip(
+                          label: isZh ? '自動即時' : 'Auto Live',
+                          selected: svc.postureSimulationPreset == 0,
+                          onTap: () => svc.setPostureSimulationPreset(
+                            0,
+                            userId: widget.userId,
+                            isZh: isZh,
+                          ),
                         ),
-                      ),
-                      _PosturePresetChip(
-                        label: isZh ? '✓ 標準姿勢' : '✓ Correct',
-                        selected: svc.postureSimulationPreset == 1,
-                        onTap: () => svc.setPostureSimulationPreset(
-                          1,
-                          userId: widget.userId,
-                          isZh: isZh,
+                        _PosturePresetChip(
+                          label: isZh ? '✓ 標準姿勢' : '✓ Correct',
+                          selected: svc.postureSimulationPreset == 1,
+                          onTap: () => svc.setPostureSimulationPreset(
+                            1,
+                            userId: widget.userId,
+                            isZh: isZh,
+                          ),
                         ),
-                      ),
-                      _PosturePresetChip(
-                        label: isZh ? '⚠ 深度微調' : '⚠ Shallow',
-                        selected: svc.postureSimulationPreset == 2,
-                        onTap: () => svc.setPostureSimulationPreset(
-                          2,
-                          userId: widget.userId,
-                          isZh: isZh,
+                        _PosturePresetChip(
+                          label: isZh ? '⚠ 深度微調' : '⚠ Shallow',
+                          selected: svc.postureSimulationPreset == 2,
+                          onTap: () => svc.setPostureSimulationPreset(
+                            2,
+                            userId: widget.userId,
+                            isZh: isZh,
+                          ),
                         ),
-                      ),
-                      _PosturePresetChip(
-                        label: isZh ? '✕ 圓背警示' : '✕ Form Alert',
-                        selected: svc.postureSimulationPreset == 3,
-                        onTap: () => svc.setPostureSimulationPreset(
-                          3,
-                          userId: widget.userId,
-                          isZh: isZh,
+                        _PosturePresetChip(
+                          label: isZh ? '✕ 圓背警示' : '✕ Form Alert',
+                          selected: svc.postureSimulationPreset == 3,
+                          onTap: () => svc.setPostureSimulationPreset(
+                            3,
+                            userId: widget.userId,
+                            isZh: isZh,
+                          ),
                         ),
-                      ),
+                      ],
                       if (detections.isNotEmpty)
                         ActionChip(
                           avatar: const Icon(
@@ -537,9 +669,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
                                 content: Text(
-                                  isZh
-                                      ? '請於系統設定 > 權限中開啟相機存取權，然後點擊重試。'
-                                      : 'Open System Settings > Permissions to allow Camera access, then tap Retry.',
+                                  isZh ? '請於系統設定 > 權限中開啟相機存取權，然後點擊重試。' : 'Open System Settings > Permissions to allow Camera access, then tap Retry.',
                                 ),
                               ),
                             );
@@ -583,9 +713,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                       children: [
                         Expanded(
                           child: Text(
-                            isZh
-                                ? '已拍攝快取影像：僅在開啟私隱同意時上傳'
-                                : 'Captured image cached locally (uploaded only with consent)',
+                            isZh ? '已拍攝快取影像：僅在開啟私隱同意時上傳' : 'Captured image cached locally (uploaded only with consent)',
                             style: const TextStyle(fontSize: 11),
                           ),
                         ),
@@ -606,9 +734,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                     strings.tr('medical_disclaimer'),
                     style: TextStyle(
                       fontSize: 11,
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onSurface
+                      color: Theme.of(context).colorScheme.onSurface
                           .withValues(alpha: 0.68),
                     ),
                   ),
@@ -660,7 +786,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                 ),
               ),
 
-            // 4. Collapsible Trained YOLO Model & Camera Settings Drawer
+            // Detector and camera configuration.
             GlassPanel(
               glassEnabled: glass,
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
@@ -668,9 +794,7 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                 tilePadding: const EdgeInsets.symmetric(horizontal: 4),
                 leading: const Icon(Icons.memory, size: 20),
                 title: Text(
-                  isZh
-                      ? '已載入訓練模型與相機設定'
-                      : 'Trained YOLO Model & Camera Settings',
+                  isZh ? '相機偵測設定' : 'Camera Detection Settings',
                   style: const TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -685,17 +809,17 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                 children: [
                   const SizedBox(height: 6),
                   DropdownButtonFormField<String>(
-                    value: CameraDetectionService.trainedYoloModels
-                            .contains(svc.activeTrainedModel)
+                    initialValue:
+                        svc.availableTrainedYoloModels.contains(
+                          svc.activeTrainedModel,
+                        )
                         ? svc.activeTrainedModel
-                        : CameraDetectionService.trainedYoloModels.first,
+                        : svc.availableTrainedYoloModels.first,
                     isExpanded: true,
                     decoration: InputDecoration(
-                      labelText: isZh
-                          ? '預訓練 YOLO 權重模型 (.onnx / .tflite)'
-                          : 'Pre-Trained YOLO Weights (.onnx / .tflite)',
+                      labelText: isZh ? '目前偵測模型' : 'Active object detector',
                     ),
-                    items: CameraDetectionService.trainedYoloModels
+                    items: svc.availableTrainedYoloModels
                         .map(
                           (m) => DropdownMenuItem<String>(
                             value: m,
@@ -718,41 +842,54 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                     },
                   ),
                   const SizedBox(height: 10),
-                  DropdownButtonFormField<DetectionEngineMode>(
-                    value: svc.engineMode,
-                    isExpanded: true,
-                    decoration: InputDecoration(
-                      labelText: isZh ? '推論模式' : 'Inference Head Mode',
-                    ),
-                    items: DetectionEngineMode.values
-                        .map(
-                          (m) => DropdownMenuItem<DetectionEngineMode>(
-                            value: m,
-                            child: Text(
-                              m.displayName,
-                              overflow: TextOverflow.ellipsis,
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (val) {
-                      if (val != null) {
-                        svc.setEngineMode(
-                          val,
-                          userId: widget.userId,
-                          isZh: isZh,
-                        );
-                      }
-                    },
+                  Text(
+                    svc.supportsPythonYolo
+                        ? (isZh
+                              ? 'Windows 使用 python_gym_pose 的 YOLO + MediaPipe。執行 RUN_FLUTTER.bat 後即可連線。'
+                              : 'Windows uses YOLO + MediaPipe from python_gym_pose. Run RUN_FLUTTER.bat to connect.')
+                        : (svc.isWebTarget
+                              ? (isZh
+                                    ? 'Chrome/Edge 網頁版僅支援相機預覽。要使用 YOLO，請改用 Windows 桌面版，並先執行 python_gym_pose\\RUN_FLUTTER.bat。'
+                                    : 'Chrome/Edge web builds provide camera preview only. For YOLO, use the Windows desktop app and first run python_gym_pose\\RUN_FLUTTER.bat.')
+                              : (isZh
+                                    ? 'Android/iOS 使用內建物件偵測；此版本未附加其他 YOLO 權重。'
+                                    : 'Android/iOS use on-device object detection; no additional YOLO weights are bundled.')),
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
+                  const SizedBox(height: 10),
+                  if (svc.availableEngineModes.isNotEmpty)
+                    DropdownButtonFormField<DetectionEngineMode>(
+                      initialValue: svc.engineMode,
+                      isExpanded: true,
+                      decoration: InputDecoration(
+                        labelText: isZh ? '推論模式' : 'Inference Head Mode',
+                      ),
+                      items: svc.availableEngineModes
+                          .map(
+                            (mode) => DropdownMenuItem<DetectionEngineMode>(
+                              value: mode,
+                              child: Text(mode.displayName),
+                            ),
+                          )
+                          .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          svc.setEngineMode(
+                            val,
+                            userId: widget.userId,
+                            isZh: isZh,
+                          );
+                        }
+                      },
+                    ),
                   const SizedBox(height: 10),
                   if (lenses.isNotEmpty)
                     Wrap(
                       spacing: 6,
                       runSpacing: 6,
                       children: List<Widget>.generate(lenses.length, (idx) {
-                        final selected = hasHardwarePreview &&
+                        final selected =
+                            hasHardwarePreview &&
                             svc.selectedCameraIndex == idx;
                         return ChoiceChip(
                           selected: selected,
@@ -768,30 +905,20 @@ class _CameraDetectionScreenState extends State<CameraDetectionScreen>
                         );
                       }),
                     ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Slider(
-                          value: svc.yoloConfidenceThreshold,
-                          min: 0.25,
-                          max: 0.90,
-                          divisions: 13,
-                          label:
-                              'Conf ${(svc.yoloConfidenceThreshold * 100).round()}%',
-                          onChanged: svc.setYoloConfidenceThreshold,
-                        ),
-                      ),
-                      Expanded(
-                        child: Slider(
-                          value: svc.yoloIouThreshold,
-                          min: 0.25,
-                          max: 0.85,
-                          divisions: 12,
-                          label: 'IoU ${(svc.yoloIouThreshold * 100).round()}%',
-                          onChanged: svc.setYoloIouThreshold,
-                        ),
-                      ),
-                    ],
+                  ListTile(
+                    contentPadding: EdgeInsets.zero,
+                    title: Text(
+                      isZh ? '標籤信心門檻' : 'Label confidence threshold',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    subtitle: Slider(
+                      value: svc.yoloConfidenceThreshold,
+                      min: 0.25,
+                      max: 0.90,
+                      divisions: 13,
+                      label: '${(svc.yoloConfidenceThreshold * 100).round()}%',
+                      onChanged: svc.setYoloConfidenceThreshold,
+                    ),
                   ),
                 ],
               ),
@@ -895,14 +1022,70 @@ class _VirtualGymCameraCanvas extends StatelessWidget {
         gradient: RadialGradient(
           center: Alignment(0.0, -0.15),
           radius: 1.05,
-          colors: <Color>[
-            Color(0xFF162434),
-            Color(0xFF070B10),
-          ],
+          colors: <Color>[Color(0xFF162434), Color(0xFF070B10)],
         ),
       ),
-      child: CustomPaint(
-        painter: _GymGridPainter(),
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          CustomPaint(painter: _GymGridPainter()),
+          Center(
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.72),
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: const Color(0xFFFF9F0A)),
+              ),
+              child: Text(
+                isZh ? '示範模式 • 非相機影像' : 'DEMO MODE • NOT CAMERA VIDEO',
+                style: const TextStyle(
+                  color: Color(0xFFFF9F0A),
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CameraUnavailableCanvas extends StatelessWidget {
+  const _CameraUnavailableCanvas({required this.isZh, this.message});
+
+  final bool isZh;
+  final String? message;
+
+  @override
+  Widget build(BuildContext context) {
+    return ColoredBox(
+      color: const Color(0xFF070B10),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.videocam_off_outlined,
+                size: 42,
+                color: Color(0xFF64D2FF),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                message ??
+                    (isZh
+                        ? '啟用相機以開始偵測'
+                        : 'Enable the camera to start detection'),
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.white70),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
