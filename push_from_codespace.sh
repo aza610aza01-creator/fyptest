@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
-echo "Staging AI Gym Cloud v5.2 (Codespaces + Cloudflare Pages + Supabase OTP)..."
+echo "=================================================================="
+echo " AI Gym Cloud v5.2 — Codespace Git Commit & Cloudflare Sync"
+echo "=================================================================="
+
 git add -A
-git commit -m "Deploy AI Gym Cloud v5.2 (Codespaces + Cloudflare Pages + Pure SVG + 6-Digit OTP)" || echo "No new changes to commit."
-git push -u origin "$BRANCH"
-echo "Pushed to origin/$BRANCH!"
+git status -s
+git commit -m "AI Gym Cloud v5.2: Add Codespace devcontainer + Cloudflare ./public static assets + 6-digit OTP" || echo "No new changes to commit."
+git push origin HEAD
+echo "Pushed to GitHub! Cloudflare Workers/Pages (/opt/buildhome) will now detect ./public and wrangler.toml."

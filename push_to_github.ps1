@@ -4,7 +4,7 @@ Write-Host "==========================================================" -Foregro
 Write-Host " AI Gym Cloud - Push Project to GitHub (fyptest.git)" -ForegroundColor Cyan
 Write-Host "==========================================================" -ForegroundColor Cyan
 
-$repoUrl = "https://github.com/aza610aza01-creator/fyptest.git"
+$repoUrl = "https://github.com/your-org/fyptest.git"
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Push-Location $root
 
