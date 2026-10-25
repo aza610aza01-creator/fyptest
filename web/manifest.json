@@ -1,8 +1,11 @@
 {
-  "name": "AI Gym Cloud v5.2",
+  "name": "AI Gym Cloud",
   "short_name": "AI Gym Cloud",
-  "start_url": "/",
+  "start_url": ".",
   "display": "standalone",
-  "background_color": "#070B10",
-  "theme_color": "#9ED756"
+  "background_color": "#05080F",
+  "theme_color": "#0A84FF",
+  "description": "AI Gym Cloud Flutter Fitness Coaching Application",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false
 }
